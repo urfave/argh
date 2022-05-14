@@ -10,7 +10,9 @@ import (
 )
 
 func main() {
-	ast, err := argh.ParseArgs(os.Args)
+	log.SetFlags(0)
+
+	ast, err := argh.ParseArgs(os.Args, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

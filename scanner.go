@@ -1,8 +1,5 @@
 package argh
 
-// NOTE: much of this is lifted from
-// https://blog.gopheracademy.com/advent-2014/parsers-lexers/
-
 import (
 	"bufio"
 	"bytes"
@@ -27,6 +24,7 @@ var (
 
 type Scanner struct {
 	r   *bufio.Reader
+	i   int
 	cfg *ScannerConfig
 }
 
@@ -34,8 +32,6 @@ type ScannerConfig struct {
 	AssignmentOperator rune
 	FlagPrefix         rune
 	MultiValueDelim    rune
-
-	Commands []string
 }
 
 func NewScanner(r io.Reader, cfg *ScannerConfig) *Scanner {
@@ -49,52 +45,56 @@ func NewScanner(r io.Reader, cfg *ScannerConfig) *Scanner {
 	}
 }
 
-func (s *Scanner) Scan() (Token, string) {
-	ch := s.read()
+func (s *Scanner) Scan() (Token, string, int) {
+	ch, pos := s.read()
 
 	if s.isBlankspace(ch) {
-		s.unread()
+		_ = s.unread()
 		return s.scanBlankspace()
 	}
 
 	if s.isAssignmentOperator(ch) {
-		return ASSIGN, string(ch)
+		return ASSIGN, string(ch), pos
 	}
 
 	if s.isMultiValueDelim(ch) {
-		return MULTI_VALUE_DELIMITER, string(ch)
+		return MULTI_VALUE_DELIMITER, string(ch), pos
 	}
 
 	if ch == eol {
-		return EOL, ""
+		return EOL, "", pos
 	}
 
 	if ch == nul {
-		return ARG_DELIMITER, string(ch)
+		return ARG_DELIMITER, string(ch), pos
 	}
 
 	if unicode.IsGraphic(ch) {
-		s.unread()
+		_ = s.unread()
 		return s.scanArg()
 	}
 
-	return ILLEGAL, string(ch)
+	return ILLEGAL, string(ch), pos
 }
 
-func (s *Scanner) read() rune {
+func (s *Scanner) read() (rune, int) {
 	ch, _, err := s.r.ReadRune()
+	s.i++
+
 	if errors.Is(err, io.EOF) {
-		return eol
+		return eol, s.i
 	} else if err != nil {
 		log.Printf("unknown scanner error=%+v", err)
-		return eol
+		return eol, s.i
 	}
 
-	return ch
+	return ch, s.i
 }
 
-func (s *Scanner) unread() {
+func (s *Scanner) unread() int {
 	_ = s.r.UnreadRune()
+	s.i--
+	return s.i
 }
 
 func (s *Scanner) isBlankspace(ch rune) bool {
@@ -117,33 +117,37 @@ func (s *Scanner) isAssignmentOperator(ch rune) bool {
 	return ch == s.cfg.AssignmentOperator
 }
 
-func (s *Scanner) scanBlankspace() (Token, string) {
+func (s *Scanner) scanBlankspace() (Token, string, int) {
 	buf := &bytes.Buffer{}
-	buf.WriteRune(s.read())
+	ch, pos := s.read()
+	buf.WriteRune(ch)
 
 	for {
-		if ch := s.read(); ch == eol {
+		ch, pos = s.read()
+
+		if ch == eol {
 			break
 		} else if !s.isBlankspace(ch) {
-			s.unread()
+			pos = s.unread()
 			break
 		} else {
 			_, _ = buf.WriteRune(ch)
 		}
 	}
 
-	return BS, buf.String()
+	return BS, buf.String(), pos
 }
 
-func (s *Scanner) scanArg() (Token, string) {
+func (s *Scanner) scanArg() (Token, string, int) {
 	buf := &bytes.Buffer{}
-	buf.WriteRune(s.read())
+	ch, pos := s.read()
+	buf.WriteRune(ch)
 
 	for {
-		ch := s.read()
+		ch, pos = s.read()
 
 		if ch == eol || ch == nul || s.isAssignmentOperator(ch) || s.isMultiValueDelim(ch) {
-			s.unread()
+			pos = s.unread()
 			break
 		}
 
@@ -153,38 +157,38 @@ func (s *Scanner) scanArg() (Token, string) {
 	str := buf.String()
 
 	if len(str) == 0 {
-		return EMPTY, str
+		return EMPTY, str, pos
 	}
 
 	ch0 := rune(str[0])
 
 	if len(str) == 1 {
 		if s.isFlagPrefix(ch0) {
-			return STDIN_FLAG, str
+			return STDIN_FLAG, str, pos
 		}
 
-		return IDENT, str
+		return IDENT, str, pos
 	}
 
 	ch1 := rune(str[1])
 
 	if len(str) == 2 {
 		if str == string(s.cfg.FlagPrefix)+string(s.cfg.FlagPrefix) {
-			return STOP_FLAG, str
+			return STOP_FLAG, str, pos
 		}
 
 		if s.isFlagPrefix(ch0) {
-			return SHORT_FLAG, str
+			return SHORT_FLAG, str, pos
 		}
 	}
 
 	if s.isFlagPrefix(ch0) {
 		if s.isFlagPrefix(ch1) {
-			return LONG_FLAG, str
+			return LONG_FLAG, str, pos
 		}
 
-		return COMPOUND_SHORT_FLAG, str
+		return COMPOUND_SHORT_FLAG, str, pos
 	}
 
-	return IDENT, str
+	return IDENT, str, pos
 }
