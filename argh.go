@@ -1,35 +1,46 @@
 package argh
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
 )
-
-// NOTE: much of this is lifted from
-// https://blog.gopheracademy.com/advent-2014/parsers-lexers/
 
 var (
 	tracingEnabled = os.Getenv("ARGH_TRACING") == "enabled"
+	traceLogger    *log.Logger
 )
+
+func init() {
+	if !tracingEnabled {
+		return
+	}
+
+	traceLogger = log.New(os.Stderr, "ARGH TRACING: ", 0)
+}
 
 type Argh struct {
 	ParseTree *ParseTree `json:"parse_tree"`
 }
 
-func (a *Argh) AST() []TypedNode {
-	return a.ParseTree.toAST()
+func (a *Argh) TypedAST() []TypedNode {
+	return a.ParseTree.typedAST()
 }
 
-/*
-func (a *Argh) String() string {
-	return a.ParseTree.String()
+func (a *Argh) AST() []Node {
+	return a.ParseTree.ast()
 }
-*/
 
 func tracef(format string, v ...any) {
 	if !tracingEnabled {
 		return
 	}
 
-	log.Printf(format, v...)
+	if _, file, line, ok := runtime.Caller(2); ok {
+		format = fmt.Sprintf("%v:%v ", filepath.Base(file), line) + format
+	}
+
+	traceLogger.Printf(format, v...)
 }

@@ -131,43 +131,47 @@ func (p *Parser) nodify() (Node, error) {
 	switch tok {
 	case IDENT:
 		if len(p.nodes) == 0 {
-			return Program{Name: lit, Pos: pos - len(lit)}, nil
+			return Program{Name: lit}, nil
 		}
-		return Ident{Literal: lit, Pos: pos - len(lit)}, nil
+
+		if _, ok := p.commands[lit]; ok {
+			return Command{Name: lit}, nil
+		}
+
+		return Ident{Literal: lit}, nil
 	case ARG_DELIMITER:
-		return ArgDelimiter{Pos: pos - 1}, nil
+		return ArgDelimiter{}, nil
 	case COMPOUND_SHORT_FLAG:
 		flagNodes := []Node{}
 
-		for i, r := range lit[1:] {
+		for _, r := range lit[1:] {
 			flagNodes = append(
 				flagNodes,
 				Flag{
-					Pos:  pos + i + 1,
 					Name: string(r),
 				},
 			)
 		}
 
-		return Statement{Pos: pos, Nodes: flagNodes}, nil
+		return Statement{Nodes: flagNodes}, nil
 	case SHORT_FLAG:
 		flagName := string(lit[1:])
 		if _, ok := p.valueFlags[flagName]; ok {
 			return p.scanValueFlag(flagName, pos)
 		}
 
-		return Flag{Name: flagName, Pos: pos - len(flagName) - 1}, nil
+		return Flag{Name: flagName}, nil
 	case LONG_FLAG:
 		flagName := string(lit[2:])
 		if _, ok := p.valueFlags[flagName]; ok {
 			return p.scanValueFlag(flagName, pos)
 		}
 
-		return Flag{Name: flagName, Pos: pos - len(flagName) - 2}, nil
+		return Flag{Name: flagName}, nil
 	default:
 	}
 
-	return Ident{Literal: lit, Pos: pos - len(lit)}, nil
+	return Ident{Literal: lit}, nil
 }
 
 func (p *Parser) scanValueFlag(flagName string, pos int) (Node, error) {
@@ -178,9 +182,7 @@ func (p *Parser) scanValueFlag(flagName string, pos int) (Node, error) {
 		return nil, err
 	}
 
-	flagSepLen := len("--") + 1
-
-	return Flag{Name: flagName, Pos: pos - len(lit) - flagSepLen, Value: ptr(lit)}, nil
+	return Flag{Name: flagName, Value: ptr(lit)}, nil
 }
 
 func (p *Parser) scanIdent() (string, error) {

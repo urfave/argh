@@ -13,39 +13,41 @@ func ptr[T any](v T) *T {
 
 func TestParser(t *testing.T) {
 	for _, tc := range []struct {
-		name        string
-		args        []string
-		cfg         *argh.ParserConfig
-		expected    *argh.Argh
-		expectedErr error
-		skip        bool
+		name   string
+		args   []string
+		cfg    *argh.ParserConfig
+		expPT  []argh.Node
+		expAST []argh.Node
+		expErr error
+		skip   bool
 	}{
 		{
 			name: "bare",
 			args: []string{"pizzas"},
-			expected: &argh.Argh{
-				ParseTree: &argh.ParseTree{
-					Nodes: []argh.Node{
-						argh.Program{Name: "pizzas"},
-					},
-				},
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas"},
+			},
+			expAST: []argh.Node{
+				argh.Program{Name: "pizzas"},
 			},
 		},
 		{
 			name: "long value-less flags",
 			args: []string{"pizzas", "--tasty", "--fresh", "--super-hot-right-now"},
-			expected: &argh.Argh{
-				ParseTree: &argh.ParseTree{
-					Nodes: []argh.Node{
-						argh.Program{Name: "pizzas", Pos: 0},
-						argh.ArgDelimiter{Pos: 6},
-						argh.Flag{Name: "tasty", Pos: 7},
-						argh.ArgDelimiter{Pos: 14},
-						argh.Flag{Name: "fresh", Pos: 15},
-						argh.ArgDelimiter{Pos: 22},
-						argh.Flag{Name: "super-hot-right-now", Pos: 23},
-					},
-				},
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "tasty"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "fresh"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "super-hot-right-now"},
+			},
+			expAST: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.Flag{Name: "tasty"},
+				argh.Flag{Name: "fresh"},
+				argh.Flag{Name: "super-hot-right-now"},
 			},
 		},
 		{
@@ -55,50 +57,122 @@ func TestParser(t *testing.T) {
 				Commands:   []string{},
 				ValueFlags: []string{"fresh"},
 			},
-			expected: &argh.Argh{
-				ParseTree: &argh.ParseTree{
-					Nodes: []argh.Node{
-						argh.Program{Name: "pizzas", Pos: 0},
-						argh.ArgDelimiter{Pos: 6},
-						argh.Flag{Name: "tasty", Pos: 7},
-						argh.ArgDelimiter{Pos: 14},
-						argh.Flag{Name: "fresh", Pos: 15, Value: ptr("soon")},
-						argh.ArgDelimiter{Pos: 27},
-						argh.Flag{Name: "super-hot-right-now", Pos: 28},
-					},
-				},
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "tasty"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "fresh", Value: ptr("soon")},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "super-hot-right-now"},
+			},
+			expAST: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.Flag{Name: "tasty"},
+				argh.Flag{Name: "fresh", Value: ptr("soon")},
+				argh.Flag{Name: "super-hot-right-now"},
 			},
 		},
 		{
-			skip: true,
-
-			name: "typical",
+			name: "short value-less flags",
+			args: []string{"pizzas", "-t", "-f", "-s"},
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "t"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "f"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "s"},
+			},
+			expAST: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.Flag{Name: "t"},
+				argh.Flag{Name: "f"},
+				argh.Flag{Name: "s"},
+			},
+		},
+		{
+			name: "compound short flags",
+			args: []string{"pizzas", "-aca", "-blol"},
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.ArgDelimiter{},
+				argh.Statement{
+					Nodes: []argh.Node{
+						argh.Flag{Name: "a"},
+						argh.Flag{Name: "c"},
+						argh.Flag{Name: "a"},
+					},
+				},
+				argh.ArgDelimiter{},
+				argh.Statement{
+					Nodes: []argh.Node{
+						argh.Flag{Name: "b"},
+						argh.Flag{Name: "l"},
+						argh.Flag{Name: "o"},
+						argh.Flag{Name: "l"},
+					},
+				},
+			},
+			expAST: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.Flag{Name: "a"},
+				argh.Flag{Name: "c"},
+				argh.Flag{Name: "a"},
+				argh.Flag{Name: "b"},
+				argh.Flag{Name: "l"},
+				argh.Flag{Name: "o"},
+				argh.Flag{Name: "l"},
+			},
+		},
+		{
+			name: "mixed long short value flags",
 			args: []string{"pizzas", "-a", "--ca", "-b", "1312", "-lol"},
 			cfg: &argh.ParserConfig{
 				Commands:   []string{},
 				ValueFlags: []string{"b"},
 			},
-			expected: &argh.Argh{
-				ParseTree: &argh.ParseTree{
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "a"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "ca"},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "b", Value: ptr("1312")},
+				argh.ArgDelimiter{},
+				argh.Statement{
 					Nodes: []argh.Node{
-						argh.Program{Name: "pizzas", Pos: 0},
-						argh.ArgDelimiter{Pos: 6},
-						argh.Flag{Name: "a", Pos: 7},
-						argh.ArgDelimiter{Pos: 9},
-						argh.Flag{Name: "ca", Pos: 10},
-						argh.ArgDelimiter{Pos: 14},
-						argh.Flag{Name: "b", Pos: 15, Value: ptr("1312")},
-						argh.ArgDelimiter{Pos: 22},
-						argh.Statement{
-							Pos: 23,
-							Nodes: []argh.Node{
-								argh.Flag{Name: "l", Pos: 29},
-								argh.Flag{Name: "o", Pos: 30},
-								argh.Flag{Name: "l", Pos: 31},
-							},
-						},
+						argh.Flag{Name: "l"},
+						argh.Flag{Name: "o"},
+						argh.Flag{Name: "l"},
 					},
 				},
+			},
+			expAST: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.Flag{Name: "a"},
+				argh.Flag{Name: "ca"},
+				argh.Flag{Name: "b", Value: ptr("1312")},
+				argh.Flag{Name: "l"},
+				argh.Flag{Name: "o"},
+				argh.Flag{Name: "l"},
+			},
+		},
+		{
+			name: "commands",
+			args: []string{"pizzas", "fly", "fry"},
+			cfg: &argh.ParserConfig{
+				Commands:   []string{"fly", "fry"},
+				ValueFlags: []string{},
+			},
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas"},
+				argh.ArgDelimiter{},
+				argh.Command{Name: "fly"},
+				argh.ArgDelimiter{},
+				argh.Command{Name: "fry"},
 			},
 		},
 	} {
@@ -106,14 +180,28 @@ func TestParser(t *testing.T) {
 			continue
 		}
 
-		t.Run(tc.name, func(ct *testing.T) {
-			actual, err := argh.ParseArgs(tc.args, tc.cfg)
-			if err != nil {
-				assert.ErrorIs(ct, err, tc.expectedErr)
-				return
-			}
+		if tc.expPT != nil {
+			t.Run(tc.name+" parse tree", func(ct *testing.T) {
+				actual, err := argh.ParseArgs(tc.args, tc.cfg)
+				if err != nil {
+					assert.ErrorIs(ct, err, tc.expErr)
+					return
+				}
 
-			assert.Equal(ct, tc.expected, actual)
-		})
+				assert.Equal(ct, tc.expPT, actual.ParseTree.Nodes)
+			})
+		}
+
+		if tc.expAST != nil {
+			t.Run(tc.name+" ast", func(ct *testing.T) {
+				actual, err := argh.ParseArgs(tc.args, tc.cfg)
+				if err != nil {
+					assert.ErrorIs(ct, err, tc.expErr)
+					return
+				}
+
+				assert.Equal(ct, tc.expAST, actual.AST())
+			})
+		}
 	}
 }
