@@ -42,7 +42,7 @@ func (pt *ParseTree) ast() []Node {
 			continue
 		}
 
-		if v, ok := node.(Statement); ok {
+		if v, ok := node.(CompoundShortFlag); ok {
 			for _, subNode := range v.Nodes {
 				ret = append(ret, subNode)
 			}
@@ -55,41 +55,3 @@ func (pt *ParseTree) ast() []Node {
 
 	return ret
 }
-
-type Node interface{}
-
-type TypedNode struct {
-	Type string `json:"type"`
-	Node Node   `json:"node"`
-}
-
-type Args struct {
-	Nodes []Node `json:"nodes"`
-}
-
-type Statement struct {
-	Nodes []Node `json:"nodes"`
-}
-
-type Program struct {
-	Name string `json:"name"`
-}
-
-type Ident struct {
-	Literal string `json:"literal"`
-}
-
-type Command struct {
-	Name string `json:"name"`
-}
-
-type Flag struct {
-	Name  string  `json:"name"`
-	Value *string `json:"value,omitempty"`
-}
-
-type StdinFlag struct{}
-
-type StopFlag struct{}
-
-type ArgDelimiter struct{}
