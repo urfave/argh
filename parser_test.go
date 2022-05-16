@@ -32,6 +32,32 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
+			name: "one positional arg",
+			args: []string{"pizzas", "excel"},
+			cfg: &argh.ParserConfig{
+				ProgValues: argh.OneValue,
+			},
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas", Values: []string{"excel"}},
+			},
+			expAST: []argh.Node{
+				argh.Program{Name: "pizzas", Values: []string{"excel"}},
+			},
+		},
+		{
+			name: "many positional args",
+			args: []string{"pizzas", "excel", "wildly", "when", "feral"},
+			cfg: &argh.ParserConfig{
+				ProgValues: argh.OneOrMoreValue,
+			},
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas", Values: []string{"excel", "wildly", "when", "feral"}},
+			},
+			expAST: []argh.Node{
+				argh.Program{Name: "pizzas", Values: []string{"excel", "wildly", "when", "feral"}},
+			},
+		},
+		{
 			name: "long value-less flags",
 			args: []string{"pizzas", "--tasty", "--fresh", "--super-hot-right-now"},
 			expPT: []argh.Node{
@@ -189,6 +215,42 @@ func TestParser(t *testing.T) {
 				argh.Command{Name: "fly"},
 				argh.ArgDelimiter{},
 				argh.Command{Name: "fry"},
+			},
+		},
+		{
+			name: "total weirdo",
+			args: []string{"PIZZAs", "^wAT@golf", "^^hecKing", "goose", "bonk", "^^FIERCENESS@-2"},
+			cfg: &argh.ParserConfig{
+				Commands: map[string]argh.NValue{"goose": argh.OneValue},
+				Flags: map[string]argh.NValue{
+					"w":          argh.ZeroValue,
+					"A":          argh.ZeroValue,
+					"T":          argh.OneValue,
+					"hecking":    argh.ZeroValue,
+					"FIERCENESS": argh.OneValue,
+				},
+				ScannerConfig: &argh.ScannerConfig{
+					AssignmentOperator: '@',
+					FlagPrefix:         '^',
+					MultiValueDelim:    ',',
+				},
+			},
+			expPT: []argh.Node{
+				argh.Program{Name: "PIZZAs"},
+				argh.ArgDelimiter{},
+				argh.CompoundShortFlag{
+					Nodes: []argh.Node{
+						argh.Flag{Name: "w"},
+						argh.Flag{Name: "A"},
+						argh.Flag{Name: "T", Values: []string{"golf"}},
+					},
+				},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "hecKing"},
+				argh.ArgDelimiter{},
+				argh.Command{Name: "goose", Values: []string{"bonk"}},
+				argh.ArgDelimiter{},
+				argh.Flag{Name: "FIERCENESS", Values: []string{"-2"}},
 			},
 		},
 	} {
