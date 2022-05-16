@@ -167,6 +167,10 @@ func (s *Scanner) scanArg() (Token, string, int) {
 			return STDIN_FLAG, str, pos
 		}
 
+		if s.isAssignmentOperator(ch0) {
+			return ASSIGN, str, pos
+		}
+
 		return IDENT, str, pos
 	}
 

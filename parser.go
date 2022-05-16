@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	ZeroValue NValue = iota
-	OneValue
-	OneOrMoreValue
+	OneOrMoreValue  NValue = -2
+	ZeroOrMoreValue NValue = -1
+	ZeroValue       NValue = 0
 )
 
 var (
-	errSyntax = errors.New("syntax error")
+	ErrSyntax = errors.New("syntax error")
 
 	DefaultParserConfig = &ParserConfig{
 		Commands:      map[string]NValue{},
@@ -54,9 +54,13 @@ type ScanEntry struct {
 }
 
 type ParserConfig struct {
-	ProgValues    NValue
-	Commands      map[string]NValue
-	Flags         map[string]NValue
+	ProgValues NValue
+	Commands   map[string]NValue
+	Flags      map[string]NValue
+
+	OnUnknownFlag    func(string) error
+	OnUnknownCommand func(string) error
+
 	ScannerConfig *ScannerConfig
 }
 
@@ -97,7 +101,7 @@ func (p *Parser) Parse() (*Argh, error) {
 func (p *Parser) parseArg() (bool, error) {
 	tok, lit, pos := p.scan()
 	if tok == ILLEGAL {
-		return false, errors.Wrapf(errSyntax, "illegal value %q at pos=%v", lit, pos)
+		return false, errors.Wrapf(ErrSyntax, "illegal value %q at pos=%v", lit, pos)
 	}
 
 	if tok == EOL {
@@ -127,6 +131,10 @@ func (p *Parser) nodify() (Node, error) {
 	tracef("nodify tok=%s lit=%q pos=%v", tok, lit, pos)
 
 	switch tok {
+	case ARG_DELIMITER:
+		return ArgDelimiter{}, nil
+	case ASSIGN:
+		return nil, errors.Wrapf(ErrSyntax, "bare assignment operator at pos=%v", pos)
 	case IDENT:
 		if len(p.nodes) == 0 {
 			values, err := p.scanValues(lit, pos, p.cfg.ProgValues)
@@ -147,8 +155,6 @@ func (p *Parser) nodify() (Node, error) {
 		}
 
 		return Ident{Literal: lit}, nil
-	case ARG_DELIMITER:
-		return ArgDelimiter{}, nil
 	case COMPOUND_SHORT_FLAG:
 		flagNodes := []Node{}
 
@@ -222,7 +228,7 @@ func (p *Parser) scanValues(lit string, pos int, n NValue) ([]string, error) {
 		for {
 			lit, err := p.scanIdent()
 			if err != nil {
-				if n == OneValue {
+				if n == NValue(1) {
 					return nil, err
 				}
 
@@ -233,7 +239,7 @@ func (p *Parser) scanValues(lit string, pos int, n NValue) ([]string, error) {
 
 			ret = append(ret, lit)
 
-			if n == OneValue && len(ret) == 1 {
+			if n == NValue(1) && len(ret) == 1 {
 				break
 			}
 		}
@@ -255,10 +261,16 @@ func (p *Parser) scanValues(lit string, pos int, n NValue) ([]string, error) {
 func (p *Parser) scanIdent() (string, error) {
 	tok, lit, pos := p.scan()
 
+	tracef("scanIdent scanned tok=%s lit=%q pos=%v", tok, lit, pos)
+
 	unscanBuf := []ScanEntry{}
 
 	if tok == ASSIGN || tok == ARG_DELIMITER {
-		unscanBuf = append([]ScanEntry{{tok: tok, lit: lit, pos: pos}}, unscanBuf...)
+		entry := ScanEntry{tok: tok, lit: lit, pos: pos}
+
+		tracef("scanIdent tok=%s; scanning next and pushing to unscan buffer entry=%+#v", tok, entry)
+
+		unscanBuf = append([]ScanEntry{entry}, unscanBuf...)
 
 		tok, lit, pos = p.scan()
 	}
@@ -267,13 +279,17 @@ func (p *Parser) scanIdent() (string, error) {
 		return lit, nil
 	}
 
-	unscanBuf = append([]ScanEntry{{tok: tok, lit: lit, pos: pos}}, unscanBuf...)
+	entry := ScanEntry{tok: tok, lit: lit, pos: pos}
+
+	tracef("scanIdent tok=%s; unscanning entry=%+#v", tok, entry)
+
+	unscanBuf = append([]ScanEntry{entry}, unscanBuf...)
 
 	for _, entry := range unscanBuf {
 		p.unscan(entry.tok, entry.lit, entry.pos)
 	}
 
-	return "", errors.Wrapf(errSyntax, "expected ident at pos=%v but got %s (%q)", pos, tok, lit)
+	return "", errors.Wrapf(ErrSyntax, "expected ident at pos=%v but got %s (%q)", pos, tok, lit)
 }
 
 func (p *Parser) scan() (Token, string, int) {

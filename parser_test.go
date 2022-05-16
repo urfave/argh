@@ -35,7 +35,7 @@ func TestParser(t *testing.T) {
 			name: "one positional arg",
 			args: []string{"pizzas", "excel"},
 			cfg: &argh.ParserConfig{
-				ProgValues: argh.OneValue,
+				ProgValues: 1,
 			},
 			expPT: []argh.Node{
 				argh.Program{Name: "pizzas", Values: []string{"excel"}},
@@ -89,7 +89,7 @@ func TestParser(t *testing.T) {
 			cfg: &argh.ParserConfig{
 				Commands: map[string]argh.NValue{},
 				Flags: map[string]argh.NValue{
-					"fresh": argh.OneValue,
+					"fresh": 1,
 					"box":   argh.OneOrMoreValue,
 				},
 			},
@@ -173,7 +173,7 @@ func TestParser(t *testing.T) {
 			args: []string{"pizzas", "-a", "--ca", "-b", "1312", "-lol"},
 			cfg: &argh.ParserConfig{
 				Commands: map[string]argh.NValue{},
-				Flags:    map[string]argh.NValue{"b": argh.OneValue},
+				Flags:    map[string]argh.NValue{"b": 1},
 			},
 			expPT: []argh.Node{
 				argh.Program{Name: "pizzas"},
@@ -221,13 +221,13 @@ func TestParser(t *testing.T) {
 			name: "total weirdo",
 			args: []string{"PIZZAs", "^wAT@golf", "^^hecKing", "goose", "bonk", "^^FIERCENESS@-2"},
 			cfg: &argh.ParserConfig{
-				Commands: map[string]argh.NValue{"goose": argh.OneValue},
+				Commands: map[string]argh.NValue{"goose": 1},
 				Flags: map[string]argh.NValue{
-					"w":          argh.ZeroValue,
-					"A":          argh.ZeroValue,
-					"T":          argh.OneValue,
-					"hecking":    argh.ZeroValue,
-					"FIERCENESS": argh.OneValue,
+					"w":          0,
+					"A":          0,
+					"T":          1,
+					"hecking":    0,
+					"FIERCENESS": 1,
 				},
 				ScannerConfig: &argh.ScannerConfig{
 					AssignmentOperator: '@',
@@ -253,6 +253,15 @@ func TestParser(t *testing.T) {
 				argh.Flag{Name: "FIERCENESS", Values: []string{"-2"}},
 			},
 		},
+		{
+			name:   "invalid bare assignment",
+			args:   []string{"pizzas", "=", "--wat"},
+			expErr: argh.ErrSyntax,
+			expPT: []argh.Node{
+				argh.Program{Name: "pizzas"},
+			},
+		},
+		{},
 	} {
 		if tc.skip {
 			continue
