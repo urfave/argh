@@ -3,6 +3,7 @@
 package argh
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
@@ -19,15 +20,15 @@ var (
 	ErrSyntax = errors.New("syntax error")
 
 	DefaultParserConfig = &ParserConfig{
-		Commands:      map[string]NValue{},
-		Flags:         map[string]NValue{},
+		Commands:      map[string]CommandConfig{},
+		Flags:         map[string]FlagConfig{},
 		ScannerConfig: DefaultScannerConfig,
 	}
 )
 
 type NValue int
 
-func ParseArgs(args []string, pCfg *ParserConfig) (*Argh, error) {
+func ParseArgs(args []string, pCfg *ParserConfig) (*ParseTree, error) {
 	reEncoded := strings.Join(args, string(nul))
 
 	return NewParser(
@@ -39,29 +40,41 @@ func ParseArgs(args []string, pCfg *ParserConfig) (*Argh, error) {
 type Parser struct {
 	s *Scanner
 
-	buf []ScanEntry
+	buf []scanEntry
 
 	cfg *ParserConfig
 
-	nodes    []Node
-	stopSeen bool
+	nodes []Node
+	node  Node
 }
 
-type ScanEntry struct {
+type ParseTree struct {
+	Nodes []Node `json:"nodes"`
+}
+
+type scanEntry struct {
 	tok Token
 	lit string
 	pos int
 }
 
 type ParserConfig struct {
-	ProgValues NValue
-	Commands   map[string]NValue
-	Flags      map[string]NValue
-
-	OnUnknownFlag    func(string) error
-	OnUnknownCommand func(string) error
+	Prog     CommandConfig
+	Commands map[string]CommandConfig
+	Flags    map[string]FlagConfig
 
 	ScannerConfig *ScannerConfig
+}
+
+type CommandConfig struct {
+	NValue     NValue
+	ValueNames []string
+	Flags      map[string]FlagConfig
+}
+
+type FlagConfig struct {
+	NValue     NValue
+	ValueNames []string
 }
 
 func NewParser(r io.Reader, pCfg *ParserConfig) *Parser {
@@ -70,7 +83,7 @@ func NewParser(r io.Reader, pCfg *ParserConfig) *Parser {
 	}
 
 	parser := &Parser{
-		buf: []ScanEntry{},
+		buf: []scanEntry{},
 		s:   NewScanner(r, pCfg.ScannerConfig),
 		cfg: pCfg,
 	}
@@ -81,7 +94,7 @@ func NewParser(r io.Reader, pCfg *ParserConfig) *Parser {
 	return parser
 }
 
-func (p *Parser) Parse() (*Argh, error) {
+func (p *Parser) Parse() (*ParseTree, error) {
 	p.nodes = []Node{}
 
 	for {
@@ -95,7 +108,7 @@ func (p *Parser) Parse() (*Argh, error) {
 		}
 	}
 
-	return &Argh{ParseTree: &ParseTree{Nodes: p.nodes}}, nil
+	return &ParseTree{Nodes: p.nodes}, nil
 }
 
 func (p *Parser) parseArg() (bool, error) {
@@ -110,7 +123,7 @@ func (p *Parser) parseArg() (bool, error) {
 
 	p.unscan(tok, lit, pos)
 
-	node, err := p.nodify()
+	node, err := p.scanNode()
 
 	tracef("parseArg node=%+#v err=%+#v", node, err)
 
@@ -125,10 +138,10 @@ func (p *Parser) parseArg() (bool, error) {
 	return false, nil
 }
 
-func (p *Parser) nodify() (Node, error) {
+func (p *Parser) scanNode() (Node, error) {
 	tok, lit, pos := p.scan()
 
-	tracef("nodify tok=%s lit=%q pos=%v", tok, lit, pos)
+	tracef("scanNode tok=%s lit=%q pos=%v", tok, lit, pos)
 
 	switch tok {
 	case ARG_DELIMITER:
@@ -136,94 +149,120 @@ func (p *Parser) nodify() (Node, error) {
 	case ASSIGN:
 		return nil, errors.Wrapf(ErrSyntax, "bare assignment operator at pos=%v", pos)
 	case IDENT:
-		if len(p.nodes) == 0 {
-			values, err := p.scanValues(lit, pos, p.cfg.ProgValues)
-			if err != nil {
-				return nil, err
-			}
-
-			return Program{Name: lit, Values: values}, nil
-		}
-
-		if n, ok := p.cfg.Commands[lit]; ok {
-			values, err := p.scanValues(lit, pos, n)
-			if err != nil {
-				return nil, err
-			}
-
-			return Command{Name: lit, Values: values}, nil
-		}
-
-		return Ident{Literal: lit}, nil
+		p.unscan(tok, lit, pos)
+		return p.scanCommandOrIdent()
 	case COMPOUND_SHORT_FLAG:
-		flagNodes := []Node{}
-
-		withoutFlagPrefix := lit[1:]
-
-		for i, r := range withoutFlagPrefix {
-			if i == len(withoutFlagPrefix)-1 {
-				flagName := string(r)
-
-				if n, ok := p.cfg.Flags[flagName]; ok {
-					values, err := p.scanValues(flagName, pos, n)
-					if err != nil {
-						return nil, err
-					}
-
-					flagNodes = append(flagNodes, Flag{Name: flagName, Values: values})
-
-					continue
-				}
-			}
-
-			flagNodes = append(
-				flagNodes,
-				Flag{
-					Name: string(r),
-				},
-			)
-		}
-
-		return CompoundShortFlag{Nodes: flagNodes}, nil
-	case SHORT_FLAG:
-		flagName := string(lit[1:])
-		if n, ok := p.cfg.Flags[flagName]; ok {
-			values, err := p.scanValues(flagName, pos, n)
-			if err != nil {
-				return nil, err
-			}
-
-			return Flag{Name: flagName, Values: values}, nil
-		}
-
-		return Flag{Name: flagName}, nil
-	case LONG_FLAG:
-		flagName := string(lit[2:])
-		if n, ok := p.cfg.Flags[flagName]; ok {
-			values, err := p.scanValues(flagName, pos, n)
-			if err != nil {
-				return nil, err
-			}
-
-			return Flag{Name: flagName, Values: values}, nil
-		}
-
-		return Flag{Name: flagName}, nil
+		p.unscan(tok, lit, pos)
+		return p.scanCompoundShortFlag()
+	case SHORT_FLAG, LONG_FLAG:
+		p.unscan(tok, lit, pos)
+		return p.scanFlag()
 	default:
 	}
 
 	return Ident{Literal: lit}, nil
 }
 
-func (p *Parser) scanValues(lit string, pos int, n NValue) ([]string, error) {
-	tracef("scanValues lit=%q pos=%v n=%v", lit, pos, n)
+func (p *Parser) scanCommandOrIdent() (Node, error) {
+	tok, lit, pos := p.scan()
 
-	values, err := func() ([]string, error) {
-		if n == ZeroValue {
-			return []string{}, nil
+	if len(p.nodes) == 0 {
+		p.unscan(tok, lit, pos)
+		values, err := p.scanValues(p.cfg.Prog.NValue, p.cfg.Prog.ValueNames)
+		if err != nil {
+			return nil, err
 		}
 
-		ret := []string{}
+		return Program{Name: lit, Values: values}, nil
+	}
+
+	if cfg, ok := p.cfg.Commands[lit]; ok {
+		p.unscan(tok, lit, pos)
+		values, err := p.scanValues(cfg.NValue, cfg.ValueNames)
+		if err != nil {
+			return nil, err
+		}
+
+		return Command{Name: lit, Values: values}, nil
+	}
+
+	return Ident{Literal: lit}, nil
+}
+
+func (p *Parser) scanFlag() (Node, error) {
+	tok, lit, pos := p.scan()
+
+	flagName := string(lit[1:])
+	if tok == LONG_FLAG {
+		flagName = string(lit[2:])
+	}
+
+	if cfg, ok := p.cfg.Flags[flagName]; ok {
+		p.unscan(tok, flagName, pos)
+
+		values, err := p.scanValues(cfg.NValue, cfg.ValueNames)
+		if err != nil {
+			return nil, err
+		}
+
+		return Flag{Name: flagName, Values: values}, nil
+	}
+
+	return Flag{Name: flagName}, nil
+}
+
+func (p *Parser) scanCompoundShortFlag() (Node, error) {
+	tok, lit, pos := p.scan()
+
+	flagNodes := []Node{}
+
+	withoutFlagPrefix := lit[1:]
+
+	for i, r := range withoutFlagPrefix {
+		if i == len(withoutFlagPrefix)-1 {
+			flagName := string(r)
+
+			if cfg, ok := p.cfg.Flags[flagName]; ok {
+				p.unscan(tok, flagName, pos)
+
+				values, err := p.scanValues(cfg.NValue, cfg.ValueNames)
+				if err != nil {
+					return nil, err
+				}
+
+				flagNodes = append(flagNodes, Flag{Name: flagName, Values: values})
+
+				continue
+			}
+		}
+
+		flagNodes = append(
+			flagNodes,
+			Flag{
+				Name: string(r),
+			},
+		)
+	}
+
+	return CompoundShortFlag{Nodes: flagNodes}, nil
+}
+
+func (p *Parser) scanValuesAndFlags() (map[string]string, []Node, error) {
+	return nil, nil, nil
+}
+
+func (p *Parser) scanValues(n NValue, valueNames []string) (map[string]string, error) {
+	_, lit, pos := p.scan()
+
+	tracef("scanValues lit=%q pos=%v n=%v valueNames=%+v", lit, pos, n, valueNames)
+
+	values, err := func() (map[string]string, error) {
+		if n == ZeroValue {
+			return map[string]string{}, nil
+		}
+
+		ret := map[string]string{}
+		i := 0
 
 		for {
 			lit, err := p.scanIdent()
@@ -237,11 +276,20 @@ func (p *Parser) scanValues(lit string, pos int, n NValue) ([]string, error) {
 				}
 			}
 
-			ret = append(ret, lit)
+			name := fmt.Sprintf("%d", i)
+			if len(valueNames)-1 >= i {
+				name = valueNames[i]
+			} else if len(valueNames) > 0 && strings.HasSuffix(valueNames[len(valueNames)-1], "+") {
+				name = strings.TrimSuffix(valueNames[len(valueNames)-1], "+")
+			}
+
+			ret[name] = lit
 
 			if n == NValue(1) && len(ret) == 1 {
 				break
 			}
+
+			i++
 		}
 
 		return ret, nil
@@ -263,14 +311,14 @@ func (p *Parser) scanIdent() (string, error) {
 
 	tracef("scanIdent scanned tok=%s lit=%q pos=%v", tok, lit, pos)
 
-	unscanBuf := []ScanEntry{}
+	unscanBuf := []scanEntry{}
 
 	if tok == ASSIGN || tok == ARG_DELIMITER {
-		entry := ScanEntry{tok: tok, lit: lit, pos: pos}
+		entry := scanEntry{tok: tok, lit: lit, pos: pos}
 
 		tracef("scanIdent tok=%s; scanning next and pushing to unscan buffer entry=%+#v", tok, entry)
 
-		unscanBuf = append([]ScanEntry{entry}, unscanBuf...)
+		unscanBuf = append([]scanEntry{entry}, unscanBuf...)
 
 		tok, lit, pos = p.scan()
 	}
@@ -279,11 +327,11 @@ func (p *Parser) scanIdent() (string, error) {
 		return lit, nil
 	}
 
-	entry := ScanEntry{tok: tok, lit: lit, pos: pos}
+	entry := scanEntry{tok: tok, lit: lit, pos: pos}
 
 	tracef("scanIdent tok=%s; unscanning entry=%+#v", tok, entry)
 
-	unscanBuf = append([]ScanEntry{entry}, unscanBuf...)
+	unscanBuf = append([]scanEntry{entry}, unscanBuf...)
 
 	for _, entry := range unscanBuf {
 		p.unscan(entry.tok, entry.lit, entry.pos)
@@ -303,13 +351,13 @@ func (p *Parser) scan() (Token, string, int) {
 
 	tok, lit, pos := p.s.Scan()
 
-	tracef("scan returning next=%s %+#v", tok, ScanEntry{tok: tok, lit: lit, pos: pos})
+	tracef("scan returning next=%s %+#v", tok, scanEntry{tok: tok, lit: lit, pos: pos})
 
 	return tok, lit, pos
 }
 
 func (p *Parser) unscan(tok Token, lit string, pos int) {
-	entry := ScanEntry{tok: tok, lit: lit, pos: pos}
+	entry := scanEntry{tok: tok, lit: lit, pos: pos}
 
 	tracef("unscan entry=%s %+#v", tok, entry)
 

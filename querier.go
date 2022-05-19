@@ -2,14 +2,33 @@ package argh
 
 import "fmt"
 
-type ParseTree struct {
-	Nodes []Node `json:"nodes"`
+type Querier interface {
+	Program() (Program, bool)
+	TypedAST() []TypedNode
+	AST() []Node
 }
 
-func (pt *ParseTree) typedAST() []TypedNode {
+func NewQuerier(pt *ParseTree) Querier {
+	return &defaultQuerier{pt: pt}
+}
+
+type defaultQuerier struct {
+	pt *ParseTree
+}
+
+func (dq *defaultQuerier) Program() (Program, bool) {
+	if len(dq.pt.Nodes) == 0 {
+		return Program{}, false
+	}
+
+	v, ok := dq.pt.Nodes[0].(Program)
+	return v, ok
+}
+
+func (dq *defaultQuerier) TypedAST() []TypedNode {
 	ret := []TypedNode{}
 
-	for _, node := range pt.Nodes {
+	for _, node := range dq.pt.Nodes {
 		if _, ok := node.(ArgDelimiter); ok {
 			continue
 		}
@@ -30,10 +49,10 @@ func (pt *ParseTree) typedAST() []TypedNode {
 	return ret
 }
 
-func (pt *ParseTree) ast() []Node {
+func (dq *defaultQuerier) AST() []Node {
 	ret := []Node{}
 
-	for _, node := range pt.Nodes {
+	for _, node := range dq.pt.Nodes {
 		if _, ok := node.(ArgDelimiter); ok {
 			continue
 		}

@@ -16,8 +16,9 @@ type CompoundShortFlag struct {
 }
 
 type Program struct {
-	Name   string   `json:"name"`
-	Values []string `json:"values"`
+	Name   string            `json:"name"`
+	Values map[string]string `json:"values"`
+	Nodes  []Node            `json:"nodes"`
 }
 
 type Ident struct {
@@ -25,13 +26,14 @@ type Ident struct {
 }
 
 type Command struct {
-	Name   string   `json:"name"`
-	Values []string `json:"values"`
+	Name   string            `json:"name"`
+	Values map[string]string `json:"values"`
+	Nodes  []Node            `json:"nodes"`
 }
 
 type Flag struct {
-	Name   string   `json:"name"`
-	Values []string `json:"values"`
+	Name   string            `json:"name"`
+	Values map[string]string `json:"values"`
 }
 
 type StdinFlag struct{}
