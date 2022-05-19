@@ -33,6 +33,12 @@ func TestQuerier_Program(t *testing.T) {
 			exp:   argh.Program{},
 			expOK: false,
 		},
+		{
+			name:  "invalid flag only",
+			args:  []string{"--oh-no"},
+			exp:   argh.Program{},
+			expOK: false,
+		},
 	} {
 		t.Run(tc.name, func(ct *testing.T) {
 			pt, err := argh.ParseArgs(tc.args, tc.cfg)

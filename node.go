@@ -7,10 +7,6 @@ type TypedNode struct {
 	Node Node   `json:"node"`
 }
 
-type Args struct {
-	Nodes []Node `json:"nodes"`
-}
-
 type CompoundShortFlag struct {
 	Nodes []Node `json:"nodes"`
 }

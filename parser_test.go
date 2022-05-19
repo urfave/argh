@@ -15,6 +15,7 @@ func TestParser(t *testing.T) {
 		expPT  []argh.Node
 		expAST []argh.Node
 		expErr error
+		skip   bool
 	}{
 		{
 			name: "bare",
@@ -306,6 +307,10 @@ func TestParser(t *testing.T) {
 		},
 		{},
 	} {
+		if tc.skip {
+			continue
+		}
+
 		if tc.expPT != nil {
 			t.Run(tc.name+" parse tree", func(ct *testing.T) {
 				actual, err := argh.ParseArgs(tc.args, tc.cfg)
