@@ -7,6 +7,10 @@ type TypedNode struct {
 	Node Node   `json:"node"`
 }
 
+type PassthroughArgs struct {
+	Nodes []Node `json:"nodes"`
+}
+
 type CompoundShortFlag struct {
 	Nodes []Node `json:"nodes"`
 }
@@ -19,6 +23,12 @@ type Program struct {
 
 type Ident struct {
 	Literal string `json:"literal"`
+}
+
+type BadArg struct {
+	Literal string
+	From    Pos
+	To      Pos
 }
 
 type Command struct {

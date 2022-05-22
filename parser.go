@@ -10,23 +10,9 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
-	OneOrMoreValue  NValue = -2
-	ZeroOrMoreValue NValue = -1
-	ZeroValue       NValue = 0
-)
-
 var (
 	ErrSyntax = errors.New("syntax error")
-
-	DefaultParserConfig = &ParserConfig{
-		Commands:      map[string]CommandConfig{},
-		Flags:         map[string]FlagConfig{},
-		ScannerConfig: DefaultScannerConfig,
-	}
 )
-
-type NValue int
 
 func ParseArgs(args []string, pCfg *ParserConfig) (*ParseTree, error) {
 	reEncoded := strings.Join(args, string(nul))
@@ -55,26 +41,7 @@ type ParseTree struct {
 type scanEntry struct {
 	tok Token
 	lit string
-	pos int
-}
-
-type ParserConfig struct {
-	Prog     CommandConfig
-	Commands map[string]CommandConfig
-	Flags    map[string]FlagConfig
-
-	ScannerConfig *ScannerConfig
-}
-
-type CommandConfig struct {
-	NValue     NValue
-	ValueNames []string
-	Flags      map[string]FlagConfig
-}
-
-type FlagConfig struct {
-	NValue     NValue
-	ValueNames []string
+	pos Pos
 }
 
 func NewParser(r io.Reader, pCfg *ParserConfig) *Parser {
@@ -314,7 +281,7 @@ func (p *Parser) scanIdent() (string, error) {
 	unscanBuf := []scanEntry{}
 
 	if tok == ASSIGN || tok == ARG_DELIMITER {
-		entry := scanEntry{tok: tok, lit: lit, pos: pos}
+		entry := scanEntry{tok: tok, lit: lit, pos: Pos(pos)}
 
 		tracef("scanIdent tok=%s; scanning next and pushing to unscan buffer entry=%+#v", tok, entry)
 
@@ -327,7 +294,7 @@ func (p *Parser) scanIdent() (string, error) {
 		return lit, nil
 	}
 
-	entry := scanEntry{tok: tok, lit: lit, pos: pos}
+	entry := scanEntry{tok: tok, lit: lit, pos: Pos(pos)}
 
 	tracef("scanIdent tok=%s; unscanning entry=%+#v", tok, entry)
 
@@ -340,7 +307,7 @@ func (p *Parser) scanIdent() (string, error) {
 	return "", errors.Wrapf(ErrSyntax, "expected ident at pos=%v but got %s (%q)", pos, tok, lit)
 }
 
-func (p *Parser) scan() (Token, string, int) {
+func (p *Parser) scan() (Token, string, Pos) {
 	if len(p.buf) != 0 {
 		entry, buf := p.buf[len(p.buf)-1], p.buf[:len(p.buf)-1]
 		p.buf = buf
@@ -356,7 +323,7 @@ func (p *Parser) scan() (Token, string, int) {
 	return tok, lit, pos
 }
 
-func (p *Parser) unscan(tok Token, lit string, pos int) {
+func (p *Parser) unscan(tok Token, lit string, pos Pos) {
 	entry := scanEntry{tok: tok, lit: lit, pos: pos}
 
 	tracef("unscan entry=%s %+#v", tok, entry)
