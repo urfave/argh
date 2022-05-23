@@ -1,10 +1,7 @@
 package argh
 
-import "fmt"
-
 type Querier interface {
 	Program() (Command, bool)
-	TypedAST() []TypedNode
 	AST() []Node
 }
 
@@ -25,50 +22,34 @@ func (dq *defaultQuerier) Program() (Command, bool) {
 	return v, ok
 }
 
-func (dq *defaultQuerier) TypedAST() []TypedNode {
-	ret := []TypedNode{}
-
-	for _, node := range dq.nodes {
-		if _, ok := node.(ArgDelimiter); ok {
-			continue
-		}
-
-		if _, ok := node.(StopFlag); ok {
-			continue
-		}
-
-		ret = append(
-			ret,
-			TypedNode{
-				Type: fmt.Sprintf("%T", node),
-				Node: node,
-			},
-		)
-	}
-
-	return ret
-}
-
 func (dq *defaultQuerier) AST() []Node {
 	ret := []Node{}
 
-	for _, node := range dq.nodes {
-		if _, ok := node.(ArgDelimiter); ok {
+	for i, node := range dq.nodes {
+		tracef("AST i=%d node type=%T", i, node)
+
+		if _, ok := node.(*ArgDelimiter); ok {
 			continue
 		}
 
-		if _, ok := node.(StopFlag); ok {
+		if _, ok := node.(*StopFlag); ok {
 			continue
 		}
 
-		if v, ok := node.(CompoundShortFlag); ok {
+		if v, ok := node.(*CompoundShortFlag); ok {
 			ret = append(ret, NewQuerier(v.Nodes).AST()...)
 
 			continue
 		}
 
-		if v, ok := node.(Command); ok {
-			ret = append(ret, NewQuerier(v.Nodes).AST()...)
+		if v, ok := node.(*Command); ok {
+			ret = append(
+				ret,
+				&Command{
+					Name:   v.Name,
+					Values: v.Values,
+					Nodes:  NewQuerier(v.Nodes).AST(),
+				})
 
 			continue
 		}

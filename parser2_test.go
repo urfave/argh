@@ -59,31 +59,25 @@ func TestParser2(t *testing.T) {
 					},
 				},
 			},
-			/*
-				expAST: []argh.Node{
-					&argh.Command{
-						Name:   "pies",
-						Values: map[string]string{},
-						Nodes: []argh.Node{
-							&argh.CompoundShortFlag{
-								Nodes: []argh.Node{
-									&argh.Flag{Name: "e"},
-									&argh.Flag{Name: "a"},
-									&argh.Flag{Name: "t"},
-								},
+			expAST: []argh.Node{
+				&argh.Command{
+					Name:   "pies",
+					Values: map[string]string{},
+					Nodes: []argh.Node{
+						&argh.Flag{Name: "e"},
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "t"},
+						&argh.Flag{Name: "wat"},
+						&argh.Command{
+							Name: "hello",
+							Values: map[string]string{
+								"name": "mario",
 							},
-							&argh.Flag{Name: "wat"},
-							&argh.Command{
-								Name: "hello",
-								Values: map[string]string{
-									"name": "mario",
-								},
-								Nodes: []argh.Node{},
-							},
+							Nodes: []argh.Node{},
 						},
 					},
 				},
-			*/
+			},
 		},
 		{
 			name: "bare",
@@ -432,12 +426,13 @@ func TestParser2(t *testing.T) {
 			},
 		},
 	} {
-		if tc.skip {
-			continue
-		}
-
 		if tc.expPT != nil {
 			t.Run(tc.name+" parse tree", func(ct *testing.T) {
+				if tc.skip {
+					ct.SkipNow()
+					return
+				}
+
 				pt, err := argh.ParseArgs2(tc.args, tc.cfg)
 				if err != nil {
 					assert.ErrorIs(ct, err, tc.expErr)
@@ -452,6 +447,11 @@ func TestParser2(t *testing.T) {
 
 		if tc.expAST != nil {
 			t.Run(tc.name+" ast", func(ct *testing.T) {
+				if tc.skip {
+					ct.SkipNow()
+					return
+				}
+
 				pt, err := argh.ParseArgs2(tc.args, tc.cfg)
 				if err != nil {
 					ct.Logf("err=%+#v", err)
