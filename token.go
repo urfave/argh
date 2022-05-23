@@ -18,6 +18,9 @@ const (
 	COMPOUND_SHORT_FLAG   // char group with single flag prefix: '-flag'
 	STDIN_FLAG            // '-'
 	STOP_FLAG             // '--'
+
+	nul = rune(0)
+	eol = rune(-1)
 )
 
 type Token int

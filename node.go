@@ -15,12 +15,6 @@ type CompoundShortFlag struct {
 	Nodes []Node `json:"nodes"`
 }
 
-type Program struct {
-	Name   string            `json:"name"`
-	Values map[string]string `json:"values"`
-	Nodes  []Node            `json:"nodes"`
-}
-
 type Ident struct {
 	Literal string `json:"literal"`
 }

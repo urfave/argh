@@ -46,7 +46,7 @@ type scanEntry struct {
 
 func NewParser(r io.Reader, pCfg *ParserConfig) *Parser {
 	if pCfg == nil {
-		pCfg = DefaultParserConfig
+		pCfg = POSIXyParserConfig
 	}
 
 	parser := &Parser{
@@ -140,10 +140,10 @@ func (p *Parser) scanCommandOrIdent() (Node, error) {
 			return nil, err
 		}
 
-		return Program{Name: lit, Values: values}, nil
+		return Command{Name: lit, Values: values}, nil
 	}
 
-	if cfg, ok := p.cfg.Commands[lit]; ok {
+	if cfg, ok := p.cfg.Prog.Commands[lit]; ok {
 		p.unscan(tok, lit, pos)
 		values, err := p.scanValues(cfg.NValue, cfg.ValueNames)
 		if err != nil {
@@ -164,7 +164,7 @@ func (p *Parser) scanFlag() (Node, error) {
 		flagName = string(lit[2:])
 	}
 
-	if cfg, ok := p.cfg.Flags[flagName]; ok {
+	if cfg, ok := p.cfg.Prog.Flags[flagName]; ok {
 		p.unscan(tok, flagName, pos)
 
 		values, err := p.scanValues(cfg.NValue, cfg.ValueNames)
@@ -189,7 +189,7 @@ func (p *Parser) scanCompoundShortFlag() (Node, error) {
 		if i == len(withoutFlagPrefix)-1 {
 			flagName := string(r)
 
-			if cfg, ok := p.cfg.Flags[flagName]; ok {
+			if cfg, ok := p.cfg.Prog.Flags[flagName]; ok {
 				p.unscan(tok, flagName, pos)
 
 				values, err := p.scanValues(cfg.NValue, cfg.ValueNames)

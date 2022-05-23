@@ -3,32 +3,32 @@ package argh
 import "fmt"
 
 type Querier interface {
-	Program() (Program, bool)
+	Program() (Command, bool)
 	TypedAST() []TypedNode
 	AST() []Node
 }
 
-func NewQuerier(pt *ParseTree) Querier {
-	return &defaultQuerier{pt: pt}
+func NewQuerier(nodes []Node) Querier {
+	return &defaultQuerier{nodes: nodes}
 }
 
 type defaultQuerier struct {
-	pt *ParseTree
+	nodes []Node
 }
 
-func (dq *defaultQuerier) Program() (Program, bool) {
-	if len(dq.pt.Nodes) == 0 {
-		return Program{}, false
+func (dq *defaultQuerier) Program() (Command, bool) {
+	if len(dq.nodes) == 0 {
+		return Command{}, false
 	}
 
-	v, ok := dq.pt.Nodes[0].(Program)
+	v, ok := dq.nodes[0].(Command)
 	return v, ok
 }
 
 func (dq *defaultQuerier) TypedAST() []TypedNode {
 	ret := []TypedNode{}
 
-	for _, node := range dq.pt.Nodes {
+	for _, node := range dq.nodes {
 		if _, ok := node.(ArgDelimiter); ok {
 			continue
 		}
@@ -52,7 +52,7 @@ func (dq *defaultQuerier) TypedAST() []TypedNode {
 func (dq *defaultQuerier) AST() []Node {
 	ret := []Node{}
 
-	for _, node := range dq.pt.Nodes {
+	for _, node := range dq.nodes {
 		if _, ok := node.(ArgDelimiter); ok {
 			continue
 		}
@@ -62,9 +62,13 @@ func (dq *defaultQuerier) AST() []Node {
 		}
 
 		if v, ok := node.(CompoundShortFlag); ok {
-			for _, subNode := range v.Nodes {
-				ret = append(ret, subNode)
-			}
+			ret = append(ret, NewQuerier(v.Nodes).AST()...)
+
+			continue
+		}
+
+		if v, ok := node.(Command); ok {
+			ret = append(ret, NewQuerier(v.Nodes).AST()...)
 
 			continue
 		}

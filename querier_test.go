@@ -12,31 +12,31 @@ func TestQuerier_Program(t *testing.T) {
 		name  string
 		args  []string
 		cfg   *argh.ParserConfig
-		exp   argh.Program
+		exp   argh.Command
 		expOK bool
 	}{
 		{
 			name:  "typical",
 			args:  []string{"pizzas", "ahoy", "--treatsa", "fun"},
-			exp:   argh.Program{Name: "pizzas"},
+			exp:   argh.Command{Name: "pizzas"},
 			expOK: true,
 		},
 		{
 			name:  "minimal",
 			args:  []string{"pizzas"},
-			exp:   argh.Program{Name: "pizzas"},
+			exp:   argh.Command{Name: "pizzas"},
 			expOK: true,
 		},
 		{
 			name:  "invalid",
 			args:  []string{},
-			exp:   argh.Program{},
+			exp:   argh.Command{},
 			expOK: false,
 		},
 		{
 			name:  "invalid flag only",
 			args:  []string{"--oh-no"},
-			exp:   argh.Program{},
+			exp:   argh.Command{},
 			expOK: false,
 		},
 	} {
@@ -44,7 +44,7 @@ func TestQuerier_Program(t *testing.T) {
 			pt, err := argh.ParseArgs(tc.args, tc.cfg)
 			require.Nil(ct, err)
 
-			prog, ok := argh.NewQuerier(pt).Program()
+			prog, ok := argh.NewQuerier(pt.Nodes).Program()
 			require.Equal(ct, tc.exp, prog)
 			require.Equal(ct, tc.expOK, ok)
 		})

@@ -7,19 +7,28 @@ const (
 )
 
 var (
-	DefaultParserConfig = &ParserConfig{
-		Commands:      map[string]CommandConfig{},
-		Flags:         map[string]FlagConfig{},
-		ScannerConfig: DefaultScannerConfig,
+	POSIXyParserConfig = &ParserConfig{
+		Prog:          CommandConfig{},
+		ScannerConfig: POSIXyScannerConfig,
 	}
 )
 
 type NValue int
 
+func (nv NValue) Contains(i int) bool {
+	if i < int(ZeroValue) {
+		return false
+	}
+
+	if nv == OneOrMoreValue || nv == ZeroOrMoreValue {
+		return true
+	}
+
+	return int(nv) > i
+}
+
 type ParserConfig struct {
-	Prog     CommandConfig
-	Commands map[string]CommandConfig
-	Flags    map[string]FlagConfig
+	Prog CommandConfig
 
 	ScannerConfig *ScannerConfig
 }
