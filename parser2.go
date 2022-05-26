@@ -116,28 +116,31 @@ func (p *parser2) parseCommand(cCfg *CommandConfig) Node {
 		case IDENT, STDIN_FLAG:
 			tracef("parseCommand(...) handling %s", p.tok)
 
-			if !cCfg.NValue.Contains(identIndex) {
-				tracef("parseCommand(...) identIndex=%d exceeds expected=%s; breaking", identIndex, cCfg.NValue)
-				break
+			if cCfg.NValue.Contains(identIndex) {
+				name := fmt.Sprintf("%d", identIndex)
+
+				tracef("parseCommand(...) checking for name of identIndex=%d", identIndex)
+
+				if len(cCfg.ValueNames) > identIndex {
+					name = cCfg.ValueNames[identIndex]
+					tracef("parseCommand(...) setting name=%s from config value names", name)
+				} else if len(cCfg.ValueNames) == 1 && (cCfg.NValue == OneOrMoreValue || cCfg.NValue == ZeroOrMoreValue) {
+					name = fmt.Sprintf("%s.%d", cCfg.ValueNames[0], identIndex)
+					tracef("parseCommand(...) setting name=%s from repeating value name", name)
+				}
+
+				if node.Values == nil {
+					node.Values = map[string]string{}
+				}
+
+				node.Values[name] = p.lit
+			} else {
+				if p.tok == STDIN_FLAG {
+					nodes = append(nodes, &StdinFlag{})
+				} else {
+					nodes = append(nodes, &Ident{Literal: p.lit})
+				}
 			}
-
-			name := fmt.Sprintf("%d", identIndex)
-
-			tracef("parseCommand(...) checking for name of identIndex=%d", identIndex)
-
-			if len(cCfg.ValueNames) > identIndex {
-				name = cCfg.ValueNames[identIndex]
-				tracef("parseCommand(...) setting name=%s from config value names", name)
-			} else if len(cCfg.ValueNames) == 1 && (cCfg.NValue == OneOrMoreValue || cCfg.NValue == ZeroOrMoreValue) {
-				name = fmt.Sprintf("%s.%d", cCfg.ValueNames[0], identIndex)
-				tracef("parseCommand(...) setting name=%s from repeating value name", name)
-			}
-
-			if node.Values == nil {
-				node.Values = map[string]string{}
-			}
-
-			node.Values[name] = p.lit
 
 			identIndex++
 		case LONG_FLAG, SHORT_FLAG, COMPOUND_SHORT_FLAG:
@@ -185,21 +188,30 @@ func (p *parser2) parseFlag(flCfgMap map[string]FlagConfig) Node {
 }
 
 func (p *parser2) parseShortFlag(flCfgMap map[string]FlagConfig) Node {
-	name := string(p.lit[1])
-	node := &Flag{Name: name}
-	tracef("parseShortFlag(...) TODO capture flag value(s)")
-	return node
-}
-
-func (p *parser2) parseLongFlag(flCfgMap map[string]FlagConfig) Node {
-	node := &Flag{Name: string(p.lit[2:])}
-	values := map[string]string{}
-	nodes := []Node{}
+	node := &Flag{Name: string(p.lit[1])}
 
 	flCfg, ok := flCfgMap[node.Name]
 	if !ok {
 		return node
 	}
+
+	return p.parseConfiguredFlag(node, flCfg)
+}
+
+func (p *parser2) parseLongFlag(flCfgMap map[string]FlagConfig) Node {
+	node := &Flag{Name: string(p.lit[2:])}
+
+	flCfg, ok := flCfgMap[node.Name]
+	if !ok {
+		return node
+	}
+
+	return p.parseConfiguredFlag(node, flCfg)
+}
+
+func (p *parser2) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
+	values := map[string]string{}
+	nodes := []Node{}
 
 	identIndex := 0
 

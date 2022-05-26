@@ -243,65 +243,75 @@ func TestParser2(t *testing.T) {
 			},
 		},
 		{
-			skip: true,
-
 			name: "short value-less flags",
 			args: []string{"pizzas", "-t", "-f", "-s"},
 			expPT: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "t"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "f"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "s"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "t"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "f"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "s"},
+					},
+				},
 			},
 			expAST: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.Flag{Name: "t"},
-				argh.Flag{Name: "f"},
-				argh.Flag{Name: "s"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.Flag{Name: "t"},
+						&argh.Flag{Name: "f"},
+						&argh.Flag{Name: "s"},
+					},
+				},
 			},
 		},
 		{
-			skip: true,
-
 			name: "compound short flags",
 			args: []string{"pizzas", "-aca", "-blol"},
 			expPT: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.ArgDelimiter{},
-				argh.CompoundShortFlag{
+				&argh.Command{
+					Name: "pizzas",
 					Nodes: []argh.Node{
-						argh.Flag{Name: "a"},
-						argh.Flag{Name: "c"},
-						argh.Flag{Name: "a"},
-					},
-				},
-				argh.ArgDelimiter{},
-				argh.CompoundShortFlag{
-					Nodes: []argh.Node{
-						argh.Flag{Name: "b"},
-						argh.Flag{Name: "l"},
-						argh.Flag{Name: "o"},
-						argh.Flag{Name: "l"},
+						&argh.ArgDelimiter{},
+						&argh.CompoundShortFlag{
+							Nodes: []argh.Node{
+								&argh.Flag{Name: "a"},
+								&argh.Flag{Name: "c"},
+								&argh.Flag{Name: "a"},
+							},
+						},
+						&argh.ArgDelimiter{},
+						&argh.CompoundShortFlag{
+							Nodes: []argh.Node{
+								&argh.Flag{Name: "b"},
+								&argh.Flag{Name: "l"},
+								&argh.Flag{Name: "o"},
+								&argh.Flag{Name: "l"},
+							},
+						},
 					},
 				},
 			},
 			expAST: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.Flag{Name: "a"},
-				argh.Flag{Name: "c"},
-				argh.Flag{Name: "a"},
-				argh.Flag{Name: "b"},
-				argh.Flag{Name: "l"},
-				argh.Flag{Name: "o"},
-				argh.Flag{Name: "l"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "c"},
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "b"},
+						&argh.Flag{Name: "l"},
+						&argh.Flag{Name: "o"},
+						&argh.Flag{Name: "l"},
+					},
+				},
 			},
 		},
 		{
-			skip: true,
-
 			name: "mixed long short value flags",
 			args: []string{"pizzas", "-a", "--ca", "-b", "1312", "-lol"},
 			cfg: &argh.ParserConfig{
@@ -313,52 +323,93 @@ func TestParser2(t *testing.T) {
 				},
 			},
 			expPT: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "a"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "ca"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "b", Values: map[string]string{"0": "1312"}},
-				argh.ArgDelimiter{},
-				argh.CompoundShortFlag{
+				&argh.Command{
+					Name: "pizzas",
 					Nodes: []argh.Node{
-						argh.Flag{Name: "l"},
-						argh.Flag{Name: "o"},
-						argh.Flag{Name: "l"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "a"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "ca"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{
+							Name:   "b",
+							Values: map[string]string{"0": "1312"},
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+							},
+						},
+						&argh.ArgDelimiter{},
+						&argh.CompoundShortFlag{
+							Nodes: []argh.Node{
+								&argh.Flag{Name: "l"},
+								&argh.Flag{Name: "o"},
+								&argh.Flag{Name: "l"},
+							},
+						},
 					},
 				},
 			},
 			expAST: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.Flag{Name: "a"},
-				argh.Flag{Name: "ca"},
-				argh.Flag{Name: "b", Values: map[string]string{"0": "1312"}},
-				argh.Flag{Name: "l"},
-				argh.Flag{Name: "o"},
-				argh.Flag{Name: "l"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "ca"},
+						&argh.Flag{Name: "b", Values: map[string]string{"0": "1312"}},
+						&argh.Flag{Name: "l"},
+						&argh.Flag{Name: "o"},
+						&argh.Flag{Name: "l"},
+					},
+				},
 			},
 		},
 		{
-			skip: true,
-
-			name: "commands",
-			args: []string{"pizzas", "fly", "fry"},
+			name: "nested commands with positional args",
+			args: []string{"pizzas", "fly", "freely", "sometimes", "and", "other", "times", "fry", "deeply", "--forever"},
 			cfg: &argh.ParserConfig{
 				Prog: argh.CommandConfig{
 					Commands: map[string]argh.CommandConfig{
-						"fly": argh.CommandConfig{},
-						"fry": argh.CommandConfig{},
+						"fly": argh.CommandConfig{
+							Commands: map[string]argh.CommandConfig{
+								"fry": argh.CommandConfig{},
+							},
+						},
 					},
 					Flags: map[string]argh.FlagConfig{},
 				},
 			},
 			expPT: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.ArgDelimiter{},
-				argh.Command{Name: "fly"},
-				argh.ArgDelimiter{},
-				argh.Command{Name: "fry"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.Command{
+							Name: "fly",
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "freely"},
+								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "sometimes"},
+								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "and"},
+								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "other"},
+								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "times"},
+								&argh.ArgDelimiter{},
+								&argh.Command{
+									Name: "fry",
+									Nodes: []argh.Node{
+										&argh.ArgDelimiter{},
+										&argh.Ident{Literal: "deeply"},
+										&argh.ArgDelimiter{},
+										&argh.Flag{Name: "forever"},
+									},
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 		{
