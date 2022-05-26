@@ -209,6 +209,29 @@ func (p *parser2) parseLongFlag(flCfgMap map[string]FlagConfig) Node {
 	return p.parseConfiguredFlag(node, flCfg)
 }
 
+func (p *parser2) parseCompoundShortFlag(flCfgMap map[string]FlagConfig) Node {
+	flagNodes := []Node{}
+
+	withoutFlagPrefix := p.lit[1:]
+
+	for i, r := range withoutFlagPrefix {
+		node := &Flag{Name: string(r)}
+
+		if i == len(withoutFlagPrefix)-1 {
+			flCfg, ok := flCfgMap[node.Name]
+			if ok {
+				flagNodes = append(flagNodes, p.parseConfiguredFlag(node, flCfg))
+
+				continue
+			}
+		}
+
+		flagNodes = append(flagNodes, node)
+	}
+
+	return &CompoundShortFlag{Nodes: flagNodes}
+}
+
 func (p *parser2) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
 	values := map[string]string{}
 	nodes := []Node{}
@@ -269,21 +292,6 @@ func (p *parser2) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
 	}
 
 	return node
-}
-
-func (p *parser2) parseCompoundShortFlag(flCfgMap map[string]FlagConfig) Node {
-	flagNodes := []Node{}
-
-	withoutFlagPrefix := p.lit[1:]
-
-	for i, r := range withoutFlagPrefix {
-		if i == len(withoutFlagPrefix)-1 {
-			tracef("parseCompoundShortFlag(...) TODO capture flag value(s)")
-		}
-		flagNodes = append(flagNodes, &Flag{Name: string(r)})
-	}
-
-	return &CompoundShortFlag{Nodes: flagNodes}
 }
 
 func (p *parser2) parsePassthrough() Node {

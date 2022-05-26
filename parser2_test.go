@@ -413,10 +413,8 @@ func TestParser2(t *testing.T) {
 			},
 		},
 		{
-			skip: true,
-
 			name: "command specific flags",
-			args: []string{"pizzas", "fly", "--freely", "fry", "--deeply", "-wAt"},
+			args: []string{"pizzas", "fly", "--freely", "fry", "--deeply", "-wAt", "hugs"},
 			cfg: &argh.ParserConfig{
 				Prog: argh.CommandConfig{
 					Commands: map[string]argh.CommandConfig{
@@ -424,13 +422,15 @@ func TestParser2(t *testing.T) {
 							Flags: map[string]argh.FlagConfig{
 								"freely": {},
 							},
-						},
-						"fry": argh.CommandConfig{
-							Flags: map[string]argh.FlagConfig{
-								"deeply": {},
-								"w":      {},
-								"A":      {},
-								"t":      {},
+							Commands: map[string]argh.CommandConfig{
+								"fry": argh.CommandConfig{
+									Flags: map[string]argh.FlagConfig{
+										"deeply": {},
+										"w":      {},
+										"A":      {},
+										"t":      argh.FlagConfig{NValue: 1},
+									},
+								},
 							},
 						},
 					},
@@ -438,21 +438,39 @@ func TestParser2(t *testing.T) {
 				},
 			},
 			expPT: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.ArgDelimiter{},
-				argh.Command{Name: "fly"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "freely"},
-				argh.ArgDelimiter{},
-				argh.Command{Name: "fry"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "deeply"},
-				argh.ArgDelimiter{},
-				argh.CompoundShortFlag{
+				&argh.Command{
+					Name: "pizzas",
 					Nodes: []argh.Node{
-						argh.Flag{Name: "w"},
-						argh.Flag{Name: "A"},
-						argh.Flag{Name: "t"},
+						&argh.ArgDelimiter{},
+						&argh.Command{
+							Name: "fly",
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+								&argh.Flag{Name: "freely"},
+								&argh.ArgDelimiter{},
+								&argh.Command{
+									Name: "fry",
+									Nodes: []argh.Node{
+										&argh.ArgDelimiter{},
+										&argh.Flag{Name: "deeply"},
+										&argh.ArgDelimiter{},
+										&argh.CompoundShortFlag{
+											Nodes: []argh.Node{
+												&argh.Flag{Name: "w"},
+												&argh.Flag{Name: "A"},
+												&argh.Flag{
+													Name:   "t",
+													Values: map[string]string{"0": "hugs"},
+													Nodes: []argh.Node{
+														&argh.ArgDelimiter{},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
