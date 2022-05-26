@@ -35,8 +35,7 @@ func TestParser2(t *testing.T) {
 			},
 			expPT: []argh.Node{
 				&argh.Command{
-					Name:   "pies",
-					Values: map[string]string{},
+					Name: "pies",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
 						&argh.CompoundShortFlag{
@@ -46,7 +45,9 @@ func TestParser2(t *testing.T) {
 								&argh.Flag{Name: "t"},
 							},
 						},
+						&argh.ArgDelimiter{},
 						&argh.Flag{Name: "wat"},
+						&argh.ArgDelimiter{},
 						&argh.Command{
 							Name: "hello",
 							Values: map[string]string{
@@ -61,8 +62,7 @@ func TestParser2(t *testing.T) {
 			},
 			expAST: []argh.Node{
 				&argh.Command{
-					Name:   "pies",
-					Values: map[string]string{},
+					Name: "pies",
 					Nodes: []argh.Node{
 						&argh.Flag{Name: "e"},
 						&argh.Flag{Name: "a"},
@@ -73,7 +73,6 @@ func TestParser2(t *testing.T) {
 							Values: map[string]string{
 								"name": "mario",
 							},
-							Nodes: []argh.Node{},
 						},
 					},
 				},
@@ -84,37 +83,38 @@ func TestParser2(t *testing.T) {
 			args: []string{"pizzas"},
 			expPT: []argh.Node{
 				&argh.Command{
-					Name:   "pizzas",
-					Values: map[string]string{},
-					Nodes:  []argh.Node{},
+					Name: "pizzas",
 				},
 			},
 			expAST: []argh.Node{
 				&argh.Command{
-					Name:   "pizzas",
-					Values: map[string]string{},
-					Nodes:  []argh.Node{},
+					Name: "pizzas",
 				},
 			},
 		},
 		{
-			skip: true,
-
 			name: "one positional arg",
 			args: []string{"pizzas", "excel"},
 			cfg: &argh.ParserConfig{
 				Prog: argh.CommandConfig{NValue: 1},
 			},
 			expPT: []argh.Node{
-				argh.Command{Name: "pizzas", Values: map[string]string{"0": "excel"}},
+				&argh.Command{
+					Name:   "pizzas",
+					Values: map[string]string{"0": "excel"},
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+					},
+				},
 			},
 			expAST: []argh.Node{
-				argh.Command{Name: "pizzas", Values: map[string]string{"0": "excel"}},
+				&argh.Command{
+					Name:   "pizzas",
+					Values: map[string]string{"0": "excel"},
+				},
 			},
 		},
 		{
-			skip: true,
-
 			name: "many positional args",
 			args: []string{"pizzas", "excel", "wildly", "when", "feral"},
 			cfg: &argh.ParserConfig{
@@ -124,7 +124,7 @@ func TestParser2(t *testing.T) {
 				},
 			},
 			expPT: []argh.Node{
-				argh.Command{
+				&argh.Command{
 					Name: "pizzas",
 					Values: map[string]string{
 						"word":   "excel",
@@ -132,10 +132,16 @@ func TestParser2(t *testing.T) {
 						"word.2": "when",
 						"word.3": "feral",
 					},
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.ArgDelimiter{},
+						&argh.ArgDelimiter{},
+						&argh.ArgDelimiter{},
+					},
 				},
 			},
 			expAST: []argh.Node{
-				argh.Command{
+				&argh.Command{
 					Name: "pizzas",
 					Values: map[string]string{
 						"word":   "excel",
@@ -147,29 +153,33 @@ func TestParser2(t *testing.T) {
 			},
 		},
 		{
-			skip: true,
-
 			name: "long value-less flags",
 			args: []string{"pizzas", "--tasty", "--fresh", "--super-hot-right-now"},
 			expPT: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "tasty"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "fresh"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "super-hot-right-now"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "tasty"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "fresh"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "super-hot-right-now"},
+					},
+				},
 			},
 			expAST: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.Flag{Name: "tasty"},
-				argh.Flag{Name: "fresh"},
-				argh.Flag{Name: "super-hot-right-now"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.Flag{Name: "tasty"},
+						&argh.Flag{Name: "fresh"},
+						&argh.Flag{Name: "super-hot-right-now"},
+					},
+				},
 			},
 		},
 		{
-			skip: true,
-
 			name: "long flags mixed",
 			args: []string{
 				"pizzas",
@@ -189,25 +199,47 @@ func TestParser2(t *testing.T) {
 				},
 			},
 			expPT: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "tasty"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "fresh", Values: map[string]string{"0": "soon"}},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "super-hot-right-now"},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "box", Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"}},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "please"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "tasty"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{
+							Name:   "fresh",
+							Values: map[string]string{"0": "soon"},
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+							},
+						},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "super-hot-right-now"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{
+							Name:   "box",
+							Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"},
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+								&argh.ArgDelimiter{},
+								&argh.ArgDelimiter{},
+								&argh.ArgDelimiter{},
+							},
+						},
+						&argh.Flag{Name: "please"},
+					},
+				},
 			},
 			expAST: []argh.Node{
-				argh.Command{Name: "pizzas"},
-				argh.Flag{Name: "tasty"},
-				argh.Flag{Name: "fresh", Values: map[string]string{"0": "soon"}},
-				argh.Flag{Name: "super-hot-right-now"},
-				argh.Flag{Name: "box", Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"}},
-				argh.Flag{Name: "please"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.Flag{Name: "tasty"},
+						&argh.Flag{Name: "fresh", Values: map[string]string{"0": "soon"}},
+						&argh.Flag{Name: "super-hot-right-now"},
+						&argh.Flag{Name: "box", Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"}},
+						&argh.Flag{Name: "please"},
+					},
+				},
 			},
 		},
 		{

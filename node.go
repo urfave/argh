@@ -3,20 +3,20 @@ package argh
 type Node interface{}
 
 type TypedNode struct {
-	Type string `json:"type"`
-	Node Node   `json:"node"`
+	Type string
+	Node Node
 }
 
 type PassthroughArgs struct {
-	Nodes []Node `json:"nodes"`
+	Nodes []Node
 }
 
 type CompoundShortFlag struct {
-	Nodes []Node `json:"nodes"`
+	Nodes []Node
 }
 
 type Ident struct {
-	Literal string `json:"literal"`
+	Literal string
 }
 
 type BadArg struct {
@@ -26,14 +26,15 @@ type BadArg struct {
 }
 
 type Command struct {
-	Name   string            `json:"name"`
-	Values map[string]string `json:"values"`
-	Nodes  []Node            `json:"nodes"`
+	Name   string
+	Values map[string]string
+	Nodes  []Node
 }
 
 type Flag struct {
-	Name   string            `json:"name"`
-	Values map[string]string `json:"values"`
+	Name   string
+	Values map[string]string
+	Nodes  []Node
 }
 
 type StdinFlag struct{}

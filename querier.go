@@ -37,18 +37,44 @@ func (dq *defaultQuerier) AST() []Node {
 		}
 
 		if v, ok := node.(*CompoundShortFlag); ok {
-			ret = append(ret, NewQuerier(v.Nodes).AST()...)
+			if v.Nodes != nil {
+				ret = append(ret, NewQuerier(v.Nodes).AST()...)
+			}
 
 			continue
 		}
 
 		if v, ok := node.(*Command); ok {
+			astNodes := NewQuerier(v.Nodes).AST()
+
+			if len(astNodes) == 0 {
+				astNodes = nil
+			}
+
 			ret = append(
 				ret,
 				&Command{
 					Name:   v.Name,
 					Values: v.Values,
-					Nodes:  NewQuerier(v.Nodes).AST(),
+					Nodes:  astNodes,
+				})
+
+			continue
+		}
+
+		if v, ok := node.(*Flag); ok {
+			astNodes := NewQuerier(v.Nodes).AST()
+
+			if len(astNodes) == 0 {
+				astNodes = nil
+			}
+
+			ret = append(
+				ret,
+				&Flag{
+					Name:   v.Name,
+					Values: v.Values,
+					Nodes:  astNodes,
 				})
 
 			continue
