@@ -55,6 +55,7 @@ func TestParser2(t *testing.T) {
 							},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "mario"},
 							},
 						},
 					},
@@ -72,6 +73,9 @@ func TestParser2(t *testing.T) {
 							Name: "hello",
 							Values: map[string]string{
 								"name": "mario",
+							},
+							Nodes: []argh.Node{
+								&argh.Ident{Literal: "mario"},
 							},
 						},
 					},
@@ -104,6 +108,7 @@ func TestParser2(t *testing.T) {
 					Values: map[string]string{"0": "excel"},
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
+						&argh.Ident{Literal: "excel"},
 					},
 				},
 			},
@@ -111,6 +116,9 @@ func TestParser2(t *testing.T) {
 				&argh.Command{
 					Name:   "pizzas",
 					Values: map[string]string{"0": "excel"},
+					Nodes: []argh.Node{
+						&argh.Ident{Literal: "excel"},
+					},
 				},
 			},
 		},
@@ -134,9 +142,13 @@ func TestParser2(t *testing.T) {
 					},
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
+						&argh.Ident{Literal: "excel"},
 						&argh.ArgDelimiter{},
+						&argh.Ident{Literal: "wildly"},
 						&argh.ArgDelimiter{},
+						&argh.Ident{Literal: "when"},
 						&argh.ArgDelimiter{},
+						&argh.Ident{Literal: "feral"},
 					},
 				},
 			},
@@ -148,6 +160,12 @@ func TestParser2(t *testing.T) {
 						"word.1": "wildly",
 						"word.2": "when",
 						"word.3": "feral",
+					},
+					Nodes: []argh.Node{
+						&argh.Ident{Literal: "excel"},
+						&argh.Ident{Literal: "wildly"},
+						&argh.Ident{Literal: "when"},
+						&argh.Ident{Literal: "feral"},
 					},
 				},
 			},
@@ -210,6 +228,7 @@ func TestParser2(t *testing.T) {
 							Values: map[string]string{"0": "soon"},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "soon"},
 							},
 						},
 						&argh.ArgDelimiter{},
@@ -220,8 +239,11 @@ func TestParser2(t *testing.T) {
 							Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "square"},
 								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "shaped"},
 								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "hot"},
 								&argh.ArgDelimiter{},
 							},
 						},
@@ -234,9 +256,23 @@ func TestParser2(t *testing.T) {
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.Flag{Name: "tasty"},
-						&argh.Flag{Name: "fresh", Values: map[string]string{"0": "soon"}},
+						&argh.Flag{
+							Name:   "fresh",
+							Values: map[string]string{"0": "soon"},
+							Nodes: []argh.Node{
+								&argh.Ident{Literal: "soon"},
+							},
+						},
 						&argh.Flag{Name: "super-hot-right-now"},
-						&argh.Flag{Name: "box", Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"}},
+						&argh.Flag{
+							Name:   "box",
+							Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"},
+							Nodes: []argh.Node{
+								&argh.Ident{Literal: "square"},
+								&argh.Ident{Literal: "shaped"},
+								&argh.Ident{Literal: "hot"},
+							},
+						},
 						&argh.Flag{Name: "please"},
 					},
 				},
@@ -336,6 +372,7 @@ func TestParser2(t *testing.T) {
 							Values: map[string]string{"0": "1312"},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "1312"},
 							},
 						},
 						&argh.ArgDelimiter{},
@@ -355,7 +392,13 @@ func TestParser2(t *testing.T) {
 					Nodes: []argh.Node{
 						&argh.Flag{Name: "a"},
 						&argh.Flag{Name: "ca"},
-						&argh.Flag{Name: "b", Values: map[string]string{"0": "1312"}},
+						&argh.Flag{
+							Name:   "b",
+							Values: map[string]string{"0": "1312"},
+							Nodes: []argh.Node{
+								&argh.Ident{Literal: "1312"},
+							},
+						},
 						&argh.Flag{Name: "l"},
 						&argh.Flag{Name: "o"},
 						&argh.Flag{Name: "l"},
@@ -406,6 +449,131 @@ func TestParser2(t *testing.T) {
 										&argh.Flag{Name: "forever"},
 									},
 								},
+							},
+						},
+					},
+				},
+			},
+			expAST: []argh.Node{
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.Command{
+							Name: "fly",
+							Nodes: []argh.Node{
+								&argh.Ident{Literal: "freely"},
+								&argh.Ident{Literal: "sometimes"},
+								&argh.Ident{Literal: "and"},
+								&argh.Ident{Literal: "other"},
+								&argh.Ident{Literal: "times"},
+								&argh.Command{
+									Name: "fry",
+									Nodes: []argh.Node{
+										&argh.Ident{Literal: "deeply"},
+										&argh.Flag{Name: "forever"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "compound flags with values",
+			args: []string{"pizzas", "-need", "sauce", "heat", "love", "-also", "over9000"},
+			cfg: &argh.ParserConfig{
+				Prog: argh.CommandConfig{
+					Flags: map[string]argh.FlagConfig{
+						"a": {NValue: argh.ZeroOrMoreValue},
+						"d": {NValue: argh.OneOrMoreValue},
+						"e": {},
+						"l": {},
+						"n": {},
+						"o": {NValue: 1, ValueNames: []string{"level"}},
+						"s": {NValue: argh.ZeroOrMoreValue},
+					},
+				},
+			},
+			expPT: []argh.Node{
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.CompoundShortFlag{
+							Nodes: []argh.Node{
+								&argh.Flag{Name: "n"},
+								&argh.Flag{Name: "e"},
+								&argh.Flag{Name: "e"},
+								&argh.Flag{
+									Name: "d",
+									Values: map[string]string{
+										"0": "sauce",
+										"1": "heat",
+										"2": "love",
+									},
+									Nodes: []argh.Node{
+										&argh.ArgDelimiter{},
+										&argh.Ident{Literal: "sauce"},
+										&argh.ArgDelimiter{},
+										&argh.Ident{Literal: "heat"},
+										&argh.ArgDelimiter{},
+										&argh.Ident{Literal: "love"},
+										&argh.ArgDelimiter{},
+									},
+								},
+							},
+						},
+						&argh.CompoundShortFlag{
+							Nodes: []argh.Node{
+								&argh.Flag{Name: "a"},
+								&argh.Flag{Name: "l"},
+								&argh.Flag{Name: "s"},
+								&argh.Flag{
+									Name: "o",
+									Values: map[string]string{
+										"level": "over9000",
+									},
+									Nodes: []argh.Node{
+										&argh.ArgDelimiter{},
+										&argh.Ident{Literal: "over9000"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expAST: []argh.Node{
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.Flag{Name: "n"},
+						&argh.Flag{Name: "e"},
+						&argh.Flag{Name: "e"},
+						&argh.Flag{
+							Name: "d",
+							Values: map[string]string{
+								"0": "sauce",
+								"1": "heat",
+								"2": "love",
+							},
+							Nodes: []argh.Node{
+								&argh.Ident{Literal: "sauce"},
+								&argh.Ident{Literal: "heat"},
+								&argh.Ident{Literal: "love"},
+							},
+						},
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "l"},
+						&argh.Flag{Name: "s"},
+						&argh.Flag{
+							Name: "o",
+							Values: map[string]string{
+								"level": "over9000",
+							},
+							Nodes: []argh.Node{
+								&argh.Ident{Literal: "over9000"},
 							},
 						},
 					},
@@ -463,8 +631,37 @@ func TestParser2(t *testing.T) {
 													Values: map[string]string{"0": "hugs"},
 													Nodes: []argh.Node{
 														&argh.ArgDelimiter{},
+														&argh.Ident{Literal: "hugs"},
 													},
 												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expAST: []argh.Node{
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.Command{
+							Name: "fly",
+							Nodes: []argh.Node{
+								&argh.Flag{Name: "freely"},
+								&argh.Command{
+									Name: "fry",
+									Nodes: []argh.Node{
+										&argh.Flag{Name: "deeply"},
+										&argh.Flag{Name: "w"},
+										&argh.Flag{Name: "A"},
+										&argh.Flag{
+											Name:   "t",
+											Values: map[string]string{"0": "hugs"},
+											Nodes: []argh.Node{
+												&argh.Ident{Literal: "hugs"},
 											},
 										},
 									},
@@ -500,30 +697,42 @@ func TestParser2(t *testing.T) {
 				},
 			},
 			expPT: []argh.Node{
-				argh.Command{Name: "PIZZAs"},
-				argh.ArgDelimiter{},
-				argh.CompoundShortFlag{
+				&argh.Command{
+					Name: "PIZZAs",
 					Nodes: []argh.Node{
-						argh.Flag{Name: "w"},
-						argh.Flag{Name: "A"},
-						argh.Flag{Name: "T", Values: map[string]string{"0": "golf"}},
+						&argh.ArgDelimiter{},
+						&argh.CompoundShortFlag{
+							Nodes: []argh.Node{
+								&argh.Flag{Name: "w"},
+								&argh.Flag{Name: "A"},
+								&argh.Flag{Name: "T", Values: map[string]string{"0": "golf"}},
+							},
+						},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "hecKing"},
+						&argh.ArgDelimiter{},
+						&argh.Command{Name: "goose", Values: map[string]string{"0": "bonk"}},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "FIERCENESS", Values: map[string]string{"0": "-2"}},
 					},
 				},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "hecKing"},
-				argh.ArgDelimiter{},
-				argh.Command{Name: "goose", Values: map[string]string{"0": "bonk"}},
-				argh.ArgDelimiter{},
-				argh.Flag{Name: "FIERCENESS", Values: map[string]string{"0": "-2"}},
 			},
 		},
 		{
-			skip:   true,
+			skip: true,
+
 			name:   "invalid bare assignment",
 			args:   []string{"pizzas", "=", "--wat"},
 			expErr: argh.ErrSyntax,
 			expPT: []argh.Node{
-				argh.Command{Name: "pizzas"},
+				&argh.Command{
+					Name: "pizzas",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "wat"},
+					},
+				},
 			},
 		},
 	} {
@@ -535,7 +744,7 @@ func TestParser2(t *testing.T) {
 				}
 
 				pt, err := argh.ParseArgs2(tc.args, tc.cfg)
-				if err != nil {
+				if err != nil || tc.expErr != nil {
 					assert.ErrorIs(ct, err, tc.expErr)
 					return
 				}
@@ -554,8 +763,8 @@ func TestParser2(t *testing.T) {
 				}
 
 				pt, err := argh.ParseArgs2(tc.args, tc.cfg)
-				if err != nil {
-					ct.Logf("err=%+#v", err)
+				if err != nil || tc.expErr != nil {
+					assert.ErrorIs(ct, err, tc.expErr)
 					return
 				}
 

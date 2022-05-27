@@ -129,17 +129,13 @@ func (p *parser2) parseCommand(cCfg *CommandConfig) Node {
 					tracef("parseCommand(...) setting name=%s from repeating value name", name)
 				}
 
-				if node.Values == nil {
-					node.Values = map[string]string{}
-				}
+				values[name] = p.lit
+			}
 
-				node.Values[name] = p.lit
+			if p.tok == STDIN_FLAG {
+				nodes = append(nodes, &StdinFlag{})
 			} else {
-				if p.tok == STDIN_FLAG {
-					nodes = append(nodes, &StdinFlag{})
-				} else {
-					nodes = append(nodes, &Ident{Literal: p.lit})
-				}
+				nodes = append(nodes, &Ident{Literal: p.lit})
 			}
 
 			identIndex++
@@ -265,6 +261,12 @@ func (p *parser2) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
 			}
 
 			values[name] = p.lit
+
+			if p.tok == STDIN_FLAG {
+				nodes = append(nodes, &StdinFlag{})
+			} else {
+				nodes = append(nodes, &Ident{Literal: p.lit})
+			}
 
 			identIndex++
 		default:
