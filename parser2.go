@@ -55,6 +55,8 @@ func (p *parser2) parseArgs() (*ParseTree, error) {
 	tracef("parseArgs() parsing %q as program command; cfg=%+#v", p.lit, p.cfg.Prog)
 	prog := p.parseCommand(&p.cfg.Prog)
 
+	tracef("parseArgs() top level node is %T", prog)
+
 	nodes := []Node{prog}
 	if v := p.parsePassthrough(); v != nil {
 		tracef("parseArgs() appending passthrough argument %v", v)

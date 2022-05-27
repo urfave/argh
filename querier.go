@@ -1,7 +1,7 @@
 package argh
 
 type Querier interface {
-	Program() (Command, bool)
+	Program() (*Command, bool)
 	AST() []Node
 }
 
@@ -13,12 +13,19 @@ type defaultQuerier struct {
 	nodes []Node
 }
 
-func (dq *defaultQuerier) Program() (Command, bool) {
+func (dq *defaultQuerier) Program() (*Command, bool) {
 	if len(dq.nodes) == 0 {
-		return Command{}, false
+		tracef("Program nodes are empty")
+		return nil, false
 	}
 
-	v, ok := dq.nodes[0].(Command)
+	tracef("Program node[0] is %T", dq.nodes[0])
+
+	v, ok := dq.nodes[0].(*Command)
+	if ok && v.Name == "" {
+		return v, false
+	}
+
 	return v, ok
 }
 
