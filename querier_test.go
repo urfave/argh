@@ -34,7 +34,7 @@ func TestQuerier_Program(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(ct *testing.T) {
-			pt, err := argh.ParseArgs2(tc.args, tc.cfg)
+			pt, err := argh.ParseArgs(tc.args, tc.cfg)
 			require.Nil(ct, err)
 
 			prog, ok := argh.NewQuerier(pt.Nodes).Program()

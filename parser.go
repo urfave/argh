@@ -24,14 +24,14 @@ type ParseTree struct {
 	Nodes []Node `json:"nodes"`
 }
 
-func ParseArgs2(args []string, pCfg *ParserConfig) (*ParseTree, error) {
+func ParseArgs(args []string, pCfg *ParserConfig) (*ParseTree, error) {
 	p := &parser{}
 	p.init(
 		strings.NewReader(strings.Join(args, string(nul))),
 		pCfg,
 	)
 
-	tracef("ParseArgs2(...) parser=%+#v", p)
+	tracef("ParseArgs(...) parser=%+#v", p)
 
 	return p.parseArgs()
 }

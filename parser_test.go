@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParser2(t *testing.T) {
+func TestParser(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		args   []string
@@ -766,7 +766,7 @@ func TestParser2(t *testing.T) {
 					return
 				}
 
-				pt, err := argh.ParseArgs2(tc.args, tc.cfg)
+				pt, err := argh.ParseArgs(tc.args, tc.cfg)
 				if err != nil || tc.expErr != nil {
 					if !assert.ErrorIs(ct, err, tc.expErr) {
 						spew.Dump(err, tc.expErr)
@@ -788,7 +788,7 @@ func TestParser2(t *testing.T) {
 					return
 				}
 
-				pt, err := argh.ParseArgs2(tc.args, tc.cfg)
+				pt, err := argh.ParseArgs(tc.args, tc.cfg)
 				if err != nil || tc.expErr != nil {
 					if !assert.ErrorIs(ct, err, tc.expErr) {
 						spew.Dump(pt)
