@@ -42,3 +42,5 @@ type StdinFlag struct{}
 type StopFlag struct{}
 
 type ArgDelimiter struct{}
+
+type Assign struct{}

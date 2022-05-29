@@ -673,21 +673,23 @@ func TestParser2(t *testing.T) {
 			},
 		},
 		{
-			skip: true,
-
 			name: "total weirdo",
 			args: []string{"PIZZAs", "^wAT@golf", "^^hecKing", "goose", "bonk", "^^FIERCENESS@-2"},
 			cfg: &argh.ParserConfig{
 				Prog: argh.CommandConfig{
 					Commands: map[string]argh.CommandConfig{
-						"goose": argh.CommandConfig{NValue: 1},
+						"goose": argh.CommandConfig{
+							NValue: 1,
+							Flags: map[string]argh.FlagConfig{
+								"FIERCENESS": argh.FlagConfig{NValue: 1},
+							},
+						},
 					},
 					Flags: map[string]argh.FlagConfig{
-						"w":          argh.FlagConfig{},
-						"A":          argh.FlagConfig{},
-						"T":          argh.FlagConfig{NValue: 1},
-						"hecking":    argh.FlagConfig{},
-						"FIERCENESS": argh.FlagConfig{NValue: 1},
+						"w":       argh.FlagConfig{},
+						"A":       argh.FlagConfig{},
+						"T":       argh.FlagConfig{NValue: 1},
+						"hecking": argh.FlagConfig{},
 					},
 				},
 				ScannerConfig: &argh.ScannerConfig{
@@ -705,25 +707,46 @@ func TestParser2(t *testing.T) {
 							Nodes: []argh.Node{
 								&argh.Flag{Name: "w"},
 								&argh.Flag{Name: "A"},
-								&argh.Flag{Name: "T", Values: map[string]string{"0": "golf"}},
+								&argh.Flag{
+									Name:   "T",
+									Values: map[string]string{"0": "golf"},
+									Nodes: []argh.Node{
+										&argh.Assign{},
+										&argh.Ident{Literal: "golf"},
+									},
+								},
 							},
 						},
 						&argh.ArgDelimiter{},
 						&argh.Flag{Name: "hecKing"},
 						&argh.ArgDelimiter{},
-						&argh.Command{Name: "goose", Values: map[string]string{"0": "bonk"}},
-						&argh.ArgDelimiter{},
-						&argh.Flag{Name: "FIERCENESS", Values: map[string]string{"0": "-2"}},
+						&argh.Command{
+							Name:   "goose",
+							Values: map[string]string{"0": "bonk"},
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "bonk"},
+								&argh.ArgDelimiter{},
+								&argh.Flag{
+									Name:   "FIERCENESS",
+									Values: map[string]string{"0": "-2"},
+									Nodes: []argh.Node{
+										&argh.Assign{},
+										&argh.Ident{Literal: "-2"},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
 		},
 		{
-			skip: true,
-
-			name:   "invalid bare assignment",
-			args:   []string{"pizzas", "=", "--wat"},
-			expErr: argh.ErrSyntax,
+			name: "invalid bare assignment",
+			args: []string{"pizzas", "=", "--wat"},
+			expErr: argh.ScannerErrorList{
+				&argh.ScannerError{Pos: argh.Position{Column: 8}, Msg: "invalid bare assignment"},
+			},
 			expPT: []argh.Node{
 				&argh.Command{
 					Name: "pizzas",
@@ -745,7 +768,10 @@ func TestParser2(t *testing.T) {
 
 				pt, err := argh.ParseArgs2(tc.args, tc.cfg)
 				if err != nil || tc.expErr != nil {
-					assert.ErrorIs(ct, err, tc.expErr)
+					if !assert.ErrorIs(ct, err, tc.expErr) {
+						spew.Dump(err, tc.expErr)
+						spew.Dump(pt)
+					}
 					return
 				}
 
@@ -764,7 +790,9 @@ func TestParser2(t *testing.T) {
 
 				pt, err := argh.ParseArgs2(tc.args, tc.cfg)
 				if err != nil || tc.expErr != nil {
-					assert.ErrorIs(ct, err, tc.expErr)
+					if !assert.ErrorIs(ct, err, tc.expErr) {
+						spew.Dump(pt)
+					}
 					return
 				}
 

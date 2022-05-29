@@ -26,7 +26,7 @@ func tracef(format string, v ...any) {
 		return
 	}
 
-	if _, file, line, ok := runtime.Caller(2); ok {
+	if _, file, line, ok := runtime.Caller(1); ok {
 		format = fmt.Sprintf("%v:%v ", filepath.Base(file), line) + format
 	}
 

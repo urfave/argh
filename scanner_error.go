@@ -16,6 +16,7 @@ func (e ScannerError) Error() string {
 	if e.Pos.IsValid() {
 		return e.Pos.String() + ":" + e.Msg
 	}
+
 	return e.Msg
 }
 
@@ -62,6 +63,18 @@ func (el ScannerErrorList) Err() error {
 		return nil
 	}
 	return el
+}
+
+func (el ScannerErrorList) Is(other error) bool {
+	if _, ok := other.(ScannerErrorList); ok {
+		return el.Error() == other.Error()
+	}
+
+	if v, ok := other.(*ScannerErrorList); ok {
+		return el.Error() == (*v).Error()
+	}
+
+	return false
 }
 
 func PrintScannerError(w io.Writer, err error) {

@@ -65,7 +65,7 @@ func (p *parser2) parseArgs() (*ParseTree, error) {
 
 	tracef("parseArgs() returning ParseTree")
 
-	return &ParseTree{Nodes: nodes}, nil
+	return &ParseTree{Nodes: nodes}, p.errors.Err()
 }
 
 func (p *parser2) next() {
@@ -149,6 +149,12 @@ func (p *parser2) parseCommand(cCfg *CommandConfig) Node {
 			tracef("parseCommand(...) appending %s node=%+#v", tok, flagNode)
 
 			nodes = append(nodes, flagNode)
+		case ASSIGN:
+			tracef("parseCommand(...) error on bare %s", p.tok)
+
+			p.errors.Add(Position{Column: int(p.pos)}, "invalid bare assignment")
+
+			break
 		default:
 			tracef("parseCommand(...) breaking on %s", p.tok)
 			break
@@ -175,10 +181,13 @@ func (p *parser2) parseIdent() Node {
 func (p *parser2) parseFlag(flCfgMap map[string]FlagConfig) Node {
 	switch p.tok {
 	case SHORT_FLAG:
+		tracef("parseFlag(...) parsing short flag with config=%+#v", flCfgMap)
 		return p.parseShortFlag(flCfgMap)
 	case LONG_FLAG:
+		tracef("parseFlag(...) parsing long flag with config=%+#v", flCfgMap)
 		return p.parseLongFlag(flCfgMap)
 	case COMPOUND_SHORT_FLAG:
+		tracef("parseFlag(...) parsing compound short flag with config=%+#v", flCfgMap)
 		return p.parseCompoundShortFlag(flCfgMap)
 	}
 
@@ -238,7 +247,7 @@ func (p *parser2) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
 
 	for i := 0; p.tok != EOL; i++ {
 		if !flCfg.NValue.Contains(identIndex) {
-			tracef("parseLongFlag(...) identIndex=%d exceeds expected=%s; breaking")
+			tracef("parseConfiguredFlag(...) identIndex=%d exceeds expected=%v; breaking", identIndex, flCfg.NValue)
 			break
 		}
 
@@ -249,17 +258,23 @@ func (p *parser2) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
 			nodes = append(nodes, &ArgDelimiter{})
 
 			continue
+		case ASSIGN:
+			nodes = append(nodes, &Assign{})
+
+			continue
 		case IDENT, STDIN_FLAG:
 			name := fmt.Sprintf("%d", identIndex)
 
-			tracef("parseLongFlag(...) checking for name of identIndex=%d", identIndex)
+			tracef("parseConfiguredFlag(...) checking for name of identIndex=%d", identIndex)
 
 			if len(flCfg.ValueNames) > identIndex {
 				name = flCfg.ValueNames[identIndex]
-				tracef("parseLongFlag(...) setting name=%s from config value names", name)
+				tracef("parseConfiguredFlag(...) setting name=%s from config value names", name)
 			} else if len(flCfg.ValueNames) == 1 && (flCfg.NValue == OneOrMoreValue || flCfg.NValue == ZeroOrMoreValue) {
 				name = fmt.Sprintf("%s.%d", flCfg.ValueNames[0], identIndex)
-				tracef("parseLongFlag(...) setting name=%s from repeating value name", name)
+				tracef("parseConfiguredFlag(...) setting name=%s from repeating value name", name)
+			} else {
+				tracef("parseConfiguredFlag(...) setting name=%s", name)
 			}
 
 			values[name] = p.lit
@@ -272,7 +287,7 @@ func (p *parser2) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
 
 			identIndex++
 		default:
-			tracef("parseLongFlag(...) breaking on %s %q %v; setting buffered=true", p.tok, p.lit, p.pos)
+			tracef("parseConfiguredFlag(...) breaking on %s %q %v; setting buffered=true", p.tok, p.lit, p.pos)
 			p.buffered = true
 
 			if len(nodes) > 0 {
