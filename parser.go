@@ -1,332 +1,332 @@
-//go:generate stringer -type NValue
-
 package argh
 
 import (
 	"fmt"
 	"io"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
-var (
-	ErrSyntax = errors.New("syntax error")
-)
-
-func ParseArgs(args []string, pCfg *ParserConfig) (*ParseTree, error) {
-	reEncoded := strings.Join(args, string(nul))
-
-	return NewParser(
-		strings.NewReader(reEncoded),
-		pCfg,
-	).Parse()
-}
-
-type Parser struct {
+type parser struct {
 	s *Scanner
-
-	buf []scanEntry
 
 	cfg *ParserConfig
 
-	nodes []Node
-	node  Node
+	errors ScannerErrorList
+
+	tok Token
+	lit string
+	pos Pos
+
+	buffered bool
 }
 
 type ParseTree struct {
 	Nodes []Node `json:"nodes"`
 }
 
-type scanEntry struct {
-	tok Token
-	lit string
-	pos Pos
+func ParseArgs2(args []string, pCfg *ParserConfig) (*ParseTree, error) {
+	p := &parser{}
+	p.init(
+		strings.NewReader(strings.Join(args, string(nul))),
+		pCfg,
+	)
+
+	tracef("ParseArgs2(...) parser=%+#v", p)
+
+	return p.parseArgs()
 }
 
-func NewParser(r io.Reader, pCfg *ParserConfig) *Parser {
+func (p *parser) init(r io.Reader, pCfg *ParserConfig) {
+	p.errors = ScannerErrorList{}
+
 	if pCfg == nil {
 		pCfg = POSIXyParserConfig
 	}
 
-	parser := &Parser{
-		buf: []scanEntry{},
-		s:   NewScanner(r, pCfg.ScannerConfig),
-		cfg: pCfg,
-	}
+	p.cfg = pCfg
 
-	tracef("NewParser parser=%+#v", parser)
-	tracef("NewParser pCfg=%+#v", pCfg)
+	p.s = NewScanner(r, pCfg.ScannerConfig)
 
-	return parser
+	p.next()
 }
 
-func (p *Parser) Parse() (*ParseTree, error) {
-	p.nodes = []Node{}
+func (p *parser) parseArgs() (*ParseTree, error) {
+	if p.errors.Len() != 0 {
+		tracef("parseArgs() bailing due to initial error")
+		return nil, p.errors.Err()
+	}
 
-	for {
-		br, err := p.parseArg()
-		if err != nil {
-			return nil, err
+	tracef("parseArgs() parsing %q as program command; cfg=%+#v", p.lit, p.cfg.Prog)
+	prog := p.parseCommand(&p.cfg.Prog)
+
+	tracef("parseArgs() top level node is %T", prog)
+
+	nodes := []Node{prog}
+	if v := p.parsePassthrough(); v != nil {
+		tracef("parseArgs() appending passthrough argument %v", v)
+		nodes = append(nodes, v)
+	}
+
+	tracef("parseArgs() returning ParseTree")
+
+	return &ParseTree{Nodes: nodes}, p.errors.Err()
+}
+
+func (p *parser) next() {
+	tracef("next() before scan: %v %q %v", p.tok, p.lit, p.pos)
+
+	p.tok, p.lit, p.pos = p.s.Scan()
+
+	tracef("next() after scan: %v %q %v", p.tok, p.lit, p.pos)
+}
+
+func (p *parser) parseCommand(cCfg *CommandConfig) Node {
+	tracef("parseCommand(%+#v)", cCfg)
+
+	node := &Command{
+		Name: p.lit,
+	}
+	values := map[string]string{}
+	nodes := []Node{}
+
+	identIndex := 0
+
+	for i := 0; p.tok != EOL; i++ {
+		if !p.buffered {
+			tracef("parseCommand(...) buffered=false; scanning next")
+			p.next()
 		}
 
-		if br {
+		p.buffered = false
+
+		tracef("parseCommand(...) for=%d values=%+#v", i, values)
+		tracef("parseCommand(...) for=%d nodes=%+#v", i, nodes)
+		tracef("parseCommand(...) for=%d tok=%s lit=%q pos=%v", i, p.tok, p.lit, p.pos)
+
+		if subCfg, ok := cCfg.Commands[p.lit]; ok {
+			subCommand := p.lit
+
+			nodes = append(nodes, p.parseCommand(&subCfg))
+
+			tracef("parseCommand(...) breaking after sub-command=%v", subCommand)
+			break
+		}
+
+		switch p.tok {
+		case ARG_DELIMITER:
+			tracef("parseCommand(...) handling %s", p.tok)
+
+			nodes = append(nodes, &ArgDelimiter{})
+
+			continue
+		case IDENT, STDIN_FLAG:
+			tracef("parseCommand(...) handling %s", p.tok)
+
+			if cCfg.NValue.Contains(identIndex) {
+				name := fmt.Sprintf("%d", identIndex)
+
+				tracef("parseCommand(...) checking for name of identIndex=%d", identIndex)
+
+				if len(cCfg.ValueNames) > identIndex {
+					name = cCfg.ValueNames[identIndex]
+					tracef("parseCommand(...) setting name=%s from config value names", name)
+				} else if len(cCfg.ValueNames) == 1 && (cCfg.NValue == OneOrMoreValue || cCfg.NValue == ZeroOrMoreValue) {
+					name = fmt.Sprintf("%s.%d", cCfg.ValueNames[0], identIndex)
+					tracef("parseCommand(...) setting name=%s from repeating value name", name)
+				}
+
+				values[name] = p.lit
+			}
+
+			if p.tok == STDIN_FLAG {
+				nodes = append(nodes, &StdinFlag{})
+			} else {
+				nodes = append(nodes, &Ident{Literal: p.lit})
+			}
+
+			identIndex++
+		case LONG_FLAG, SHORT_FLAG, COMPOUND_SHORT_FLAG:
+			tok := p.tok
+
+			flagNode := p.parseFlag(cCfg.Flags)
+
+			tracef("parseCommand(...) appending %s node=%+#v", tok, flagNode)
+
+			nodes = append(nodes, flagNode)
+		case ASSIGN:
+			tracef("parseCommand(...) error on bare %s", p.tok)
+
+			p.errors.Add(Position{Column: int(p.pos)}, "invalid bare assignment")
+
+			break
+		default:
+			tracef("parseCommand(...) breaking on %s", p.tok)
 			break
 		}
 	}
 
-	return &ParseTree{Nodes: p.nodes}, nil
+	if len(nodes) > 0 {
+		node.Nodes = nodes
+	}
+
+	if len(values) > 0 {
+		node.Values = values
+	}
+
+	tracef("parseCommand(...) returning node=%+#v", node)
+	return node
 }
 
-func (p *Parser) parseArg() (bool, error) {
-	tok, lit, pos := p.scan()
-	if tok == ILLEGAL {
-		return false, errors.Wrapf(ErrSyntax, "illegal value %q at pos=%v", lit, pos)
-	}
-
-	if tok == EOL {
-		return true, nil
-	}
-
-	p.unscan(tok, lit, pos)
-
-	node, err := p.scanNode()
-
-	tracef("parseArg node=%+#v err=%+#v", node, err)
-
-	if err != nil {
-		return false, errors.Wrapf(err, "value %q at pos=%v", lit, pos)
-	}
-
-	if node != nil {
-		p.nodes = append(p.nodes, node)
-	}
-
-	return false, nil
+func (p *parser) parseIdent() Node {
+	node := &Ident{Literal: p.lit}
+	return node
 }
 
-func (p *Parser) scanNode() (Node, error) {
-	tok, lit, pos := p.scan()
-
-	tracef("scanNode tok=%s lit=%q pos=%v", tok, lit, pos)
-
-	switch tok {
-	case ARG_DELIMITER:
-		return ArgDelimiter{}, nil
-	case ASSIGN:
-		return nil, errors.Wrapf(ErrSyntax, "bare assignment operator at pos=%v", pos)
-	case IDENT:
-		p.unscan(tok, lit, pos)
-		return p.scanCommandOrIdent()
+func (p *parser) parseFlag(flCfgMap map[string]FlagConfig) Node {
+	switch p.tok {
+	case SHORT_FLAG:
+		tracef("parseFlag(...) parsing short flag with config=%+#v", flCfgMap)
+		return p.parseShortFlag(flCfgMap)
+	case LONG_FLAG:
+		tracef("parseFlag(...) parsing long flag with config=%+#v", flCfgMap)
+		return p.parseLongFlag(flCfgMap)
 	case COMPOUND_SHORT_FLAG:
-		p.unscan(tok, lit, pos)
-		return p.scanCompoundShortFlag()
-	case SHORT_FLAG, LONG_FLAG:
-		p.unscan(tok, lit, pos)
-		return p.scanFlag()
-	default:
+		tracef("parseFlag(...) parsing compound short flag with config=%+#v", flCfgMap)
+		return p.parseCompoundShortFlag(flCfgMap)
 	}
 
-	return Ident{Literal: lit}, nil
+	panic(fmt.Sprintf("token %v cannot be parsed as flag", p.tok))
 }
 
-func (p *Parser) scanCommandOrIdent() (Node, error) {
-	tok, lit, pos := p.scan()
+func (p *parser) parseShortFlag(flCfgMap map[string]FlagConfig) Node {
+	node := &Flag{Name: string(p.lit[1])}
 
-	if len(p.nodes) == 0 {
-		p.unscan(tok, lit, pos)
-		values, err := p.scanValues(p.cfg.Prog.NValue, p.cfg.Prog.ValueNames)
-		if err != nil {
-			return nil, err
-		}
-
-		return Command{Name: lit, Values: values}, nil
+	flCfg, ok := flCfgMap[node.Name]
+	if !ok {
+		return node
 	}
 
-	if cfg, ok := p.cfg.Prog.Commands[lit]; ok {
-		p.unscan(tok, lit, pos)
-		values, err := p.scanValues(cfg.NValue, cfg.ValueNames)
-		if err != nil {
-			return nil, err
-		}
-
-		return Command{Name: lit, Values: values}, nil
-	}
-
-	return Ident{Literal: lit}, nil
+	return p.parseConfiguredFlag(node, flCfg)
 }
 
-func (p *Parser) scanFlag() (Node, error) {
-	tok, lit, pos := p.scan()
+func (p *parser) parseLongFlag(flCfgMap map[string]FlagConfig) Node {
+	node := &Flag{Name: string(p.lit[2:])}
 
-	flagName := string(lit[1:])
-	if tok == LONG_FLAG {
-		flagName = string(lit[2:])
+	flCfg, ok := flCfgMap[node.Name]
+	if !ok {
+		return node
 	}
 
-	if cfg, ok := p.cfg.Prog.Flags[flagName]; ok {
-		p.unscan(tok, flagName, pos)
-
-		values, err := p.scanValues(cfg.NValue, cfg.ValueNames)
-		if err != nil {
-			return nil, err
-		}
-
-		return Flag{Name: flagName, Values: values}, nil
-	}
-
-	return Flag{Name: flagName}, nil
+	return p.parseConfiguredFlag(node, flCfg)
 }
 
-func (p *Parser) scanCompoundShortFlag() (Node, error) {
-	tok, lit, pos := p.scan()
-
+func (p *parser) parseCompoundShortFlag(flCfgMap map[string]FlagConfig) Node {
 	flagNodes := []Node{}
 
-	withoutFlagPrefix := lit[1:]
+	withoutFlagPrefix := p.lit[1:]
 
 	for i, r := range withoutFlagPrefix {
+		node := &Flag{Name: string(r)}
+
 		if i == len(withoutFlagPrefix)-1 {
-			flagName := string(r)
-
-			if cfg, ok := p.cfg.Prog.Flags[flagName]; ok {
-				p.unscan(tok, flagName, pos)
-
-				values, err := p.scanValues(cfg.NValue, cfg.ValueNames)
-				if err != nil {
-					return nil, err
-				}
-
-				flagNodes = append(flagNodes, Flag{Name: flagName, Values: values})
+			flCfg, ok := flCfgMap[node.Name]
+			if ok {
+				flagNodes = append(flagNodes, p.parseConfiguredFlag(node, flCfg))
 
 				continue
 			}
 		}
 
-		flagNodes = append(
-			flagNodes,
-			Flag{
-				Name: string(r),
-			},
-		)
+		flagNodes = append(flagNodes, node)
 	}
 
-	return CompoundShortFlag{Nodes: flagNodes}, nil
+	return &CompoundShortFlag{Nodes: flagNodes}
 }
 
-func (p *Parser) scanValuesAndFlags() (map[string]string, []Node, error) {
-	return nil, nil, nil
-}
+func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
+	values := map[string]string{}
+	nodes := []Node{}
 
-func (p *Parser) scanValues(n NValue, valueNames []string) (map[string]string, error) {
-	_, lit, pos := p.scan()
+	identIndex := 0
 
-	tracef("scanValues lit=%q pos=%v n=%v valueNames=%+v", lit, pos, n, valueNames)
-
-	values, err := func() (map[string]string, error) {
-		if n == ZeroValue {
-			return map[string]string{}, nil
+	for i := 0; p.tok != EOL; i++ {
+		if !flCfg.NValue.Contains(identIndex) {
+			tracef("parseConfiguredFlag(...) identIndex=%d exceeds expected=%v; breaking", identIndex, flCfg.NValue)
+			break
 		}
 
-		ret := map[string]string{}
-		i := 0
+		p.next()
 
-		for {
-			lit, err := p.scanIdent()
-			if err != nil {
-				if n == NValue(1) {
-					return nil, err
-				}
+		switch p.tok {
+		case ARG_DELIMITER:
+			nodes = append(nodes, &ArgDelimiter{})
 
-				if n == OneOrMoreValue {
-					break
-				}
+			continue
+		case ASSIGN:
+			nodes = append(nodes, &Assign{})
+
+			continue
+		case IDENT, STDIN_FLAG:
+			name := fmt.Sprintf("%d", identIndex)
+
+			tracef("parseConfiguredFlag(...) checking for name of identIndex=%d", identIndex)
+
+			if len(flCfg.ValueNames) > identIndex {
+				name = flCfg.ValueNames[identIndex]
+				tracef("parseConfiguredFlag(...) setting name=%s from config value names", name)
+			} else if len(flCfg.ValueNames) == 1 && (flCfg.NValue == OneOrMoreValue || flCfg.NValue == ZeroOrMoreValue) {
+				name = fmt.Sprintf("%s.%d", flCfg.ValueNames[0], identIndex)
+				tracef("parseConfiguredFlag(...) setting name=%s from repeating value name", name)
+			} else {
+				tracef("parseConfiguredFlag(...) setting name=%s", name)
 			}
 
-			name := fmt.Sprintf("%d", i)
-			if len(valueNames)-1 >= i {
-				name = valueNames[i]
-			} else if len(valueNames) > 0 && strings.HasSuffix(valueNames[len(valueNames)-1], "+") {
-				name = strings.TrimSuffix(valueNames[len(valueNames)-1], "+")
+			values[name] = p.lit
+
+			if p.tok == STDIN_FLAG {
+				nodes = append(nodes, &StdinFlag{})
+			} else {
+				nodes = append(nodes, &Ident{Literal: p.lit})
 			}
 
-			ret[name] = lit
+			identIndex++
+		default:
+			tracef("parseConfiguredFlag(...) breaking on %s %q %v; setting buffered=true", p.tok, p.lit, p.pos)
+			p.buffered = true
 
-			if n == NValue(1) && len(ret) == 1 {
-				break
+			if len(nodes) > 0 {
+				node.Nodes = nodes
 			}
 
-			i++
+			if len(values) > 0 {
+				node.Values = values
+			}
+
+			return node
 		}
-
-		return ret, nil
-	}()
-
-	if err != nil {
-		return nil, err
 	}
 
-	if len(values) == 0 {
-		return nil, nil
+	if len(nodes) > 0 {
+		node.Nodes = nodes
 	}
 
-	return values, nil
+	if len(values) > 0 {
+		node.Values = values
+	}
+
+	return node
 }
 
-func (p *Parser) scanIdent() (string, error) {
-	tok, lit, pos := p.scan()
+func (p *parser) parsePassthrough() Node {
+	nodes := []Node{}
 
-	tracef("scanIdent scanned tok=%s lit=%q pos=%v", tok, lit, pos)
-
-	unscanBuf := []scanEntry{}
-
-	if tok == ASSIGN || tok == ARG_DELIMITER {
-		entry := scanEntry{tok: tok, lit: lit, pos: Pos(pos)}
-
-		tracef("scanIdent tok=%s; scanning next and pushing to unscan buffer entry=%+#v", tok, entry)
-
-		unscanBuf = append([]scanEntry{entry}, unscanBuf...)
-
-		tok, lit, pos = p.scan()
+	for ; p.tok != EOL; p.next() {
+		nodes = append(nodes, &Ident{Literal: p.lit})
 	}
 
-	if tok == IDENT {
-		return lit, nil
+	if len(nodes) == 0 {
+		return nil
 	}
 
-	entry := scanEntry{tok: tok, lit: lit, pos: Pos(pos)}
-
-	tracef("scanIdent tok=%s; unscanning entry=%+#v", tok, entry)
-
-	unscanBuf = append([]scanEntry{entry}, unscanBuf...)
-
-	for _, entry := range unscanBuf {
-		p.unscan(entry.tok, entry.lit, entry.pos)
-	}
-
-	return "", errors.Wrapf(ErrSyntax, "expected ident at pos=%v but got %s (%q)", pos, tok, lit)
-}
-
-func (p *Parser) scan() (Token, string, Pos) {
-	if len(p.buf) != 0 {
-		entry, buf := p.buf[len(p.buf)-1], p.buf[:len(p.buf)-1]
-		p.buf = buf
-
-		tracef("scan returning buffer entry=%s %+#v", entry.tok, entry)
-		return entry.tok, entry.lit, entry.pos
-	}
-
-	tok, lit, pos := p.s.Scan()
-
-	tracef("scan returning next=%s %+#v", tok, scanEntry{tok: tok, lit: lit, pos: pos})
-
-	return tok, lit, pos
-}
-
-func (p *Parser) unscan(tok Token, lit string, pos Pos) {
-	entry := scanEntry{tok: tok, lit: lit, pos: pos}
-
-	tracef("unscan entry=%s %+#v", tok, entry)
-
-	p.buf = append(p.buf, entry)
+	return &PassthroughArgs{Nodes: nodes}
 }

@@ -12,7 +12,7 @@ import (
 func main() {
 	log.SetFlags(0)
 
-	ast, err := argh.ParseArgs(os.Args, nil)
+	ast, err := argh.ParseArgs2(os.Args, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
