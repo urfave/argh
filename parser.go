@@ -11,7 +11,7 @@ type parser struct {
 
 	cfg *ParserConfig
 
-	errors ScannerErrorList
+	errors ParserErrorList
 
 	tok Token
 	lit string
@@ -36,8 +36,12 @@ func ParseArgs(args []string, pCfg *ParserConfig) (*ParseTree, error) {
 	return p.parseArgs()
 }
 
+func (p *parser) addError(msg string) {
+	p.errors.Add(Position{Column: int(p.pos)}, msg)
+}
+
 func (p *parser) init(r io.Reader, pCfg *ParserConfig) {
-	p.errors = ScannerErrorList{}
+	p.errors = ParserErrorList{}
 
 	if pCfg == nil {
 		pCfg = POSIXyParserConfig
@@ -156,7 +160,7 @@ func (p *parser) parseCommand(cCfg *CommandConfig) Node {
 		case ASSIGN:
 			tracef("parseCommand(...) error on bare %s", p.tok)
 
-			p.errors.Add(Position{Column: int(p.pos)}, "invalid bare assignment")
+			p.addError("invalid bare assignment")
 
 			break
 		default:
@@ -203,6 +207,8 @@ func (p *parser) parseShortFlag(flCfgMap map[string]FlagConfig) Node {
 
 	flCfg, ok := flCfgMap[node.Name]
 	if !ok {
+		p.addError(fmt.Sprintf("unknown flag %q", node.Name))
+
 		return node
 	}
 
@@ -214,6 +220,8 @@ func (p *parser) parseLongFlag(flCfgMap map[string]FlagConfig) Node {
 
 	flCfg, ok := flCfgMap[node.Name]
 	if !ok {
+		p.addError(fmt.Sprintf("unknown flag %q", node.Name))
+
 		return node
 	}
 
@@ -230,11 +238,15 @@ func (p *parser) parseCompoundShortFlag(flCfgMap map[string]FlagConfig) Node {
 
 		if i == len(withoutFlagPrefix)-1 {
 			flCfg, ok := flCfgMap[node.Name]
-			if ok {
-				flagNodes = append(flagNodes, p.parseConfiguredFlag(node, flCfg))
+			if !ok {
+				p.addError(fmt.Sprintf("unknown flag %q", node.Name))
 
 				continue
 			}
+
+			flagNodes = append(flagNodes, p.parseConfiguredFlag(node, flCfg))
+
+			continue
 		}
 
 		flagNodes = append(flagNodes, node)

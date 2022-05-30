@@ -25,6 +25,12 @@ func TestParser(t *testing.T) {
 			},
 			cfg: &argh.ParserConfig{
 				Prog: argh.CommandConfig{
+					Flags: map[string]argh.FlagConfig{
+						"e":   {},
+						"a":   {},
+						"t":   {},
+						"wat": {},
+					},
 					Commands: map[string]argh.CommandConfig{
 						"hello": argh.CommandConfig{
 							NValue:     1,
@@ -173,6 +179,15 @@ func TestParser(t *testing.T) {
 		{
 			name: "long value-less flags",
 			args: []string{"pizzas", "--tasty", "--fresh", "--super-hot-right-now"},
+			cfg: &argh.ParserConfig{
+				Prog: argh.CommandConfig{
+					Flags: map[string]argh.FlagConfig{
+						"tasty":               {},
+						"fresh":               {},
+						"super-hot-right-now": {},
+					},
+				},
+			},
 			expPT: []argh.Node{
 				&argh.Command{
 					Name: "pizzas",
@@ -211,8 +226,11 @@ func TestParser(t *testing.T) {
 				Prog: argh.CommandConfig{
 					Commands: map[string]argh.CommandConfig{},
 					Flags: map[string]argh.FlagConfig{
-						"fresh": argh.FlagConfig{NValue: 1},
-						"box":   argh.FlagConfig{NValue: argh.OneOrMoreValue},
+						"tasty":               {},
+						"fresh":               argh.FlagConfig{NValue: 1},
+						"super-hot-right-now": {},
+						"box":                 argh.FlagConfig{NValue: argh.OneOrMoreValue},
+						"please":              {},
 					},
 				},
 			},
@@ -281,6 +299,15 @@ func TestParser(t *testing.T) {
 		{
 			name: "short value-less flags",
 			args: []string{"pizzas", "-t", "-f", "-s"},
+			cfg: &argh.ParserConfig{
+				Prog: argh.CommandConfig{
+					Flags: map[string]argh.FlagConfig{
+						"t": {},
+						"f": {},
+						"s": {},
+					},
+				},
+			},
 			expPT: []argh.Node{
 				&argh.Command{
 					Name: "pizzas",
@@ -308,6 +335,17 @@ func TestParser(t *testing.T) {
 		{
 			name: "compound short flags",
 			args: []string{"pizzas", "-aca", "-blol"},
+			cfg: &argh.ParserConfig{
+				Prog: argh.CommandConfig{
+					Flags: map[string]argh.FlagConfig{
+						"a": {},
+						"b": {},
+						"c": {},
+						"l": {},
+						"o": {},
+					},
+				},
+			},
 			expPT: []argh.Node{
 				&argh.Command{
 					Name: "pizzas",
@@ -354,7 +392,11 @@ func TestParser(t *testing.T) {
 				Prog: argh.CommandConfig{
 					Commands: map[string]argh.CommandConfig{},
 					Flags: map[string]argh.FlagConfig{
-						"b": argh.FlagConfig{NValue: 1},
+						"a":  {},
+						"b":  argh.FlagConfig{NValue: 1},
+						"ca": {},
+						"l":  {},
+						"o":  {},
 					},
 				},
 			},
@@ -414,7 +456,11 @@ func TestParser(t *testing.T) {
 					Commands: map[string]argh.CommandConfig{
 						"fly": argh.CommandConfig{
 							Commands: map[string]argh.CommandConfig{
-								"fry": argh.CommandConfig{},
+								"fry": argh.CommandConfig{
+									Flags: map[string]argh.FlagConfig{
+										"forever": {},
+									},
+								},
 							},
 						},
 					},
@@ -689,7 +735,7 @@ func TestParser(t *testing.T) {
 						"w":       argh.FlagConfig{},
 						"A":       argh.FlagConfig{},
 						"T":       argh.FlagConfig{NValue: 1},
-						"hecking": argh.FlagConfig{},
+						"hecKing": argh.FlagConfig{},
 					},
 				},
 				ScannerConfig: &argh.ScannerConfig{
@@ -742,10 +788,60 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
+			name: "windows like",
+			args: []string{"hotdog", "/f", "/L", "/o:ppy", "hats"},
+			cfg: &argh.ParserConfig{
+				Prog: argh.CommandConfig{
+					Flags: map[string]argh.FlagConfig{
+						"f": {},
+						"L": {},
+						"o": argh.FlagConfig{NValue: 1},
+					},
+					Commands: map[string]argh.CommandConfig{
+						"hats": {},
+					},
+				},
+				ScannerConfig: &argh.ScannerConfig{
+					AssignmentOperator: ':',
+					FlagPrefix:         '/',
+					MultiValueDelim:    ',',
+				},
+			},
+			expPT: []argh.Node{
+				&argh.Command{
+					Name: "hotdog",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "f"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{Name: "L"},
+						&argh.ArgDelimiter{},
+						&argh.Flag{
+							Name:   "o",
+							Values: map[string]string{"0": "ppy"},
+							Nodes: []argh.Node{
+								&argh.Assign{},
+								&argh.Ident{Literal: "ppy"},
+							},
+						},
+						&argh.ArgDelimiter{},
+						&argh.Command{Name: "hats"},
+					},
+				},
+			},
+		},
+		{
 			name: "invalid bare assignment",
 			args: []string{"pizzas", "=", "--wat"},
-			expErr: argh.ScannerErrorList{
-				&argh.ScannerError{Pos: argh.Position{Column: 8}, Msg: "invalid bare assignment"},
+			cfg: &argh.ParserConfig{
+				Prog: argh.CommandConfig{
+					Flags: map[string]argh.FlagConfig{
+						"wat": {},
+					},
+				},
+			},
+			expErr: argh.ParserErrorList{
+				&argh.ParserError{Pos: argh.Position{Column: 8}, Msg: "invalid bare assignment"},
 			},
 			expPT: []argh.Node{
 				&argh.Command{
