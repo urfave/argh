@@ -36,11 +36,62 @@ type ParserConfig struct {
 type CommandConfig struct {
 	NValue     NValue
 	ValueNames []string
-	Flags      map[string]FlagConfig
-	Commands   map[string]CommandConfig
+	Flags      *Flags
+	Commands   *Commands
+}
+
+func (cCfg *CommandConfig) GetCommandConfig(name string) (CommandConfig, bool) {
+	if cCfg.Commands == nil {
+		cCfg.Commands = &Commands{Map: map[string]CommandConfig{}}
+	}
+
+	return cCfg.Commands.Get(name)
+}
+
+func (cCfg *CommandConfig) GetFlagConfig(name string) (FlagConfig, bool) {
+	if cCfg.Flags == nil {
+		cCfg.Flags = &Flags{Map: map[string]FlagConfig{}}
+	}
+
+	return cCfg.Flags.Get(name)
 }
 
 type FlagConfig struct {
 	NValue     NValue
+	Persist    bool
 	ValueNames []string
+}
+
+type Flags struct {
+	Parent *Flags
+	Map    map[string]FlagConfig
+}
+
+func (fl *Flags) Get(name string) (FlagConfig, bool) {
+	if fl.Map == nil {
+		fl.Map = map[string]FlagConfig{}
+	}
+
+	flCfg, ok := fl.Map[name]
+	if !ok && fl.Parent != nil {
+		flCfg, ok = fl.Parent.Get(name)
+		return flCfg, ok && flCfg.Persist
+	}
+
+	return flCfg, ok
+}
+
+type Commands struct {
+	Map map[string]CommandConfig
+}
+
+func (cmd *Commands) Get(name string) (CommandConfig, bool) {
+	tracef("Get(%q)", name)
+
+	if cmd.Map == nil {
+		cmd.Map = map[string]CommandConfig{}
+	}
+
+	cmdCfg, ok := cmd.Map[name]
+	return cmdCfg, ok
 }

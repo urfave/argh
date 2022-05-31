@@ -107,7 +107,9 @@ func (p *parser) parseCommand(cCfg *CommandConfig) Node {
 		tracef("parseCommand(...) for=%d nodes=%+#v", i, nodes)
 		tracef("parseCommand(...) for=%d tok=%s lit=%q pos=%v", i, p.tok, p.lit, p.pos)
 
-		if subCfg, ok := cCfg.Commands[p.lit]; ok {
+		tracef("parseCommand(...) cCfg=%+#v", cCfg)
+
+		if subCfg, ok := cCfg.GetCommandConfig(p.lit); ok {
 			subCommand := p.lit
 
 			nodes = append(nodes, p.parseCommand(&subCfg))
@@ -186,26 +188,26 @@ func (p *parser) parseIdent() Node {
 	return node
 }
 
-func (p *parser) parseFlag(flCfgMap map[string]FlagConfig) Node {
+func (p *parser) parseFlag(flags *Flags) Node {
 	switch p.tok {
 	case SHORT_FLAG:
-		tracef("parseFlag(...) parsing short flag with config=%+#v", flCfgMap)
-		return p.parseShortFlag(flCfgMap)
+		tracef("parseFlag(...) parsing short flag with config=%+#v", flags)
+		return p.parseShortFlag(flags)
 	case LONG_FLAG:
-		tracef("parseFlag(...) parsing long flag with config=%+#v", flCfgMap)
-		return p.parseLongFlag(flCfgMap)
+		tracef("parseFlag(...) parsing long flag with config=%+#v", flags)
+		return p.parseLongFlag(flags)
 	case COMPOUND_SHORT_FLAG:
-		tracef("parseFlag(...) parsing compound short flag with config=%+#v", flCfgMap)
-		return p.parseCompoundShortFlag(flCfgMap)
+		tracef("parseFlag(...) parsing compound short flag with config=%+#v", flags)
+		return p.parseCompoundShortFlag(flags)
 	}
 
 	panic(fmt.Sprintf("token %v cannot be parsed as flag", p.tok))
 }
 
-func (p *parser) parseShortFlag(flCfgMap map[string]FlagConfig) Node {
+func (p *parser) parseShortFlag(flags *Flags) Node {
 	node := &Flag{Name: string(p.lit[1])}
 
-	flCfg, ok := flCfgMap[node.Name]
+	flCfg, ok := flags.Get(node.Name)
 	if !ok {
 		p.addError(fmt.Sprintf("unknown flag %q", node.Name))
 
@@ -215,10 +217,10 @@ func (p *parser) parseShortFlag(flCfgMap map[string]FlagConfig) Node {
 	return p.parseConfiguredFlag(node, flCfg)
 }
 
-func (p *parser) parseLongFlag(flCfgMap map[string]FlagConfig) Node {
+func (p *parser) parseLongFlag(flags *Flags) Node {
 	node := &Flag{Name: string(p.lit[2:])}
 
-	flCfg, ok := flCfgMap[node.Name]
+	flCfg, ok := flags.Get(node.Name)
 	if !ok {
 		p.addError(fmt.Sprintf("unknown flag %q", node.Name))
 
@@ -228,7 +230,7 @@ func (p *parser) parseLongFlag(flCfgMap map[string]FlagConfig) Node {
 	return p.parseConfiguredFlag(node, flCfg)
 }
 
-func (p *parser) parseCompoundShortFlag(flCfgMap map[string]FlagConfig) Node {
+func (p *parser) parseCompoundShortFlag(flags *Flags) Node {
 	flagNodes := []Node{}
 
 	withoutFlagPrefix := p.lit[1:]
@@ -237,7 +239,7 @@ func (p *parser) parseCompoundShortFlag(flCfgMap map[string]FlagConfig) Node {
 		node := &Flag{Name: string(r)}
 
 		if i == len(withoutFlagPrefix)-1 {
-			flCfg, ok := flCfgMap[node.Name]
+			flCfg, ok := flags.Get(node.Name)
 			if !ok {
 				p.addError(fmt.Sprintf("unknown flag %q", node.Name))
 

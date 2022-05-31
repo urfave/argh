@@ -20,10 +20,14 @@ func TestQuerier_Program(t *testing.T) {
 			args: []string{"pizzas", "ahoy", "--treatsa", "fun"},
 			cfg: &argh.ParserConfig{
 				Prog: argh.CommandConfig{
-					Commands: map[string]argh.CommandConfig{
-						"ahoy": argh.CommandConfig{
-							Flags: map[string]argh.FlagConfig{
-								"treatsa": argh.FlagConfig{NValue: 1},
+					Commands: &argh.Commands{
+						Map: map[string]argh.CommandConfig{
+							"ahoy": argh.CommandConfig{
+								Flags: &argh.Flags{
+									Map: map[string]argh.FlagConfig{
+										"treatsa": argh.FlagConfig{NValue: 1},
+									},
+								},
 							},
 						},
 					},
