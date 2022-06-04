@@ -7,10 +7,10 @@ const (
 )
 
 var (
-	POSIXyParserConfig = &ParserConfig{
-		Prog:          CommandConfig{},
-		ScannerConfig: POSIXyScannerConfig,
-	}
+	POSIXyParserConfig = NewParserConfig(
+		nil,
+		POSIXyScannerConfig,
+	)
 )
 
 type NValue int
@@ -35,11 +35,44 @@ type ParserConfig struct {
 	ScannerConfig *ScannerConfig
 }
 
+func NewParserConfig(prog *CommandConfig, sCfg *ScannerConfig) *ParserConfig {
+	if sCfg == nil {
+		sCfg = POSIXyScannerConfig
+	}
+
+	if prog == nil {
+		prog = &CommandConfig{}
+	}
+
+	prog.init()
+
+	pCfg := &ParserConfig{
+		Prog:          *prog,
+		ScannerConfig: sCfg,
+	}
+
+	return pCfg
+}
+
 type CommandConfig struct {
 	NValue     NValue
 	ValueNames []string
 	Flags      *Flags
 	Commands   *Commands
+}
+
+func (cCfg *CommandConfig) init() {
+	if cCfg.ValueNames == nil {
+		cCfg.ValueNames = []string{}
+	}
+
+	if cCfg.Flags == nil {
+		cCfg.Flags = &Flags{}
+	}
+
+	if cCfg.Commands == nil {
+		cCfg.Commands = &Commands{}
+	}
 }
 
 func (cCfg *CommandConfig) GetCommandConfig(name string) (CommandConfig, bool) {
@@ -71,6 +104,8 @@ type FlagConfig struct {
 type Flags struct {
 	Parent *Flags
 	Map    map[string]FlagConfig
+
+	Automatic bool
 }
 
 func (fl *Flags) Get(name string) (FlagConfig, bool) {
@@ -81,9 +116,15 @@ func (fl *Flags) Get(name string) (FlagConfig, bool) {
 	}
 
 	flCfg, ok := fl.Map[name]
-	if !ok && fl.Parent != nil {
-		flCfg, ok = fl.Parent.Get(name)
-		return flCfg, ok && flCfg.Persist
+	if !ok {
+		if fl.Automatic {
+			return FlagConfig{}, true
+		}
+
+		if fl.Parent != nil {
+			flCfg, ok = fl.Parent.Get(name)
+			return flCfg, ok && flCfg.Persist
+		}
 	}
 
 	return flCfg, ok
