@@ -16,6 +16,8 @@ var (
 type NValue int
 
 func (nv NValue) Contains(i int) bool {
+	tracef("NValue.Contains(%v)", i)
+
 	if i < int(ZeroValue) {
 		return false
 	}
@@ -41,6 +43,8 @@ type CommandConfig struct {
 }
 
 func (cCfg *CommandConfig) GetCommandConfig(name string) (CommandConfig, bool) {
+	tracef("CommandConfig.GetCommandConfig(%q)", name)
+
 	if cCfg.Commands == nil {
 		cCfg.Commands = &Commands{Map: map[string]CommandConfig{}}
 	}
@@ -49,6 +53,8 @@ func (cCfg *CommandConfig) GetCommandConfig(name string) (CommandConfig, bool) {
 }
 
 func (cCfg *CommandConfig) GetFlagConfig(name string) (FlagConfig, bool) {
+	tracef("CommandConfig.GetFlagConfig(%q)", name)
+
 	if cCfg.Flags == nil {
 		cCfg.Flags = &Flags{Map: map[string]FlagConfig{}}
 	}
@@ -68,6 +74,8 @@ type Flags struct {
 }
 
 func (fl *Flags) Get(name string) (FlagConfig, bool) {
+	tracef("Flags.Get(%q)", name)
+
 	if fl.Map == nil {
 		fl.Map = map[string]FlagConfig{}
 	}
@@ -86,7 +94,7 @@ type Commands struct {
 }
 
 func (cmd *Commands) Get(name string) (CommandConfig, bool) {
-	tracef("Get(%q)", name)
+	tracef("Commands.Get(%q)", name)
 
 	if cmd.Map == nil {
 		cmd.Map = map[string]CommandConfig{}
