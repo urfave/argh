@@ -7,10 +7,7 @@ const (
 )
 
 var (
-	POSIXyParserConfig = NewParserConfig(
-		nil,
-		POSIXyScannerConfig,
-	)
+	POSIXyParserConfig = NewParserConfig()
 )
 
 type NValue int
@@ -35,20 +32,24 @@ type ParserConfig struct {
 	ScannerConfig *ScannerConfig
 }
 
-func NewParserConfig(prog *CommandConfig, sCfg *ScannerConfig) *ParserConfig {
-	if sCfg == nil {
-		sCfg = POSIXyScannerConfig
+type ParserOption func(*ParserConfig)
+
+func NewParserConfig(opts ...ParserOption) *ParserConfig {
+	pCfg := &ParserConfig{}
+
+	for _, opt := range opts {
+		if opt != nil {
+			opt(pCfg)
+		}
 	}
 
-	if prog == nil {
-		prog = &CommandConfig{}
+	if pCfg.Prog.IsZero() {
+		pCfg.Prog = CommandConfig{}
+		pCfg.Prog.init()
 	}
 
-	prog.init()
-
-	pCfg := &ParserConfig{
-		Prog:          *prog,
-		ScannerConfig: sCfg,
+	if pCfg.ScannerConfig == nil {
+		pCfg.ScannerConfig = POSIXyScannerConfig
 	}
 
 	return pCfg
@@ -59,6 +60,13 @@ type CommandConfig struct {
 	ValueNames []string
 	Flags      *Flags
 	Commands   *Commands
+}
+
+func (cCfg *CommandConfig) IsZero() bool {
+	return cCfg.NValue == NValue(0) &&
+		cCfg.ValueNames == nil &&
+		cCfg.Flags == nil &&
+		cCfg.Commands == nil
 }
 
 func (cCfg *CommandConfig) init() {

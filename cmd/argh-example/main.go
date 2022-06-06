@@ -15,16 +15,16 @@ func main() {
 
 	log.SetFlags(0)
 
-	pt, err := argh.ParseArgs(os.Args, argh.NewParserConfig(
-		&argh.CommandConfig{
-			NValue:     argh.OneOrMoreValue,
-			ValueNames: []string{"topping"},
-			Flags: &argh.Flags{
-				Automatic: true,
-			},
+	pCfg := argh.NewParserConfig()
+	pCfg.Prog = argh.CommandConfig{
+		NValue:     argh.OneOrMoreValue,
+		ValueNames: []string{"topping"},
+		Flags: &argh.Flags{
+			Automatic: true,
 		},
-		nil,
-	))
+	}
+
+	pt, err := argh.ParseArgs(os.Args, pCfg)
 	if err != nil {
 		log.Fatal(err)
 	}
