@@ -27,7 +27,7 @@ func (nv NValue) Contains(i int) bool {
 }
 
 type ParserConfig struct {
-	Prog CommandConfig
+	Prog *CommandConfig
 
 	ScannerConfig *ScannerConfig
 }
@@ -43,8 +43,8 @@ func NewParserConfig(opts ...ParserOption) *ParserConfig {
 		}
 	}
 
-	if pCfg.Prog.IsZero() {
-		pCfg.Prog = CommandConfig{}
+	if pCfg.Prog == nil {
+		pCfg.Prog = &CommandConfig{}
 		pCfg.Prog.init()
 	}
 
@@ -60,13 +60,6 @@ type CommandConfig struct {
 	ValueNames []string
 	Flags      *Flags
 	Commands   *Commands
-}
-
-func (cCfg *CommandConfig) IsZero() bool {
-	return cCfg.NValue == NValue(0) &&
-		cCfg.ValueNames == nil &&
-		cCfg.Flags == nil &&
-		cCfg.Commands == nil
 }
 
 func (cCfg *CommandConfig) init() {

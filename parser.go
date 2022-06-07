@@ -61,7 +61,7 @@ func (p *parser) parseArgs() (*ParseTree, error) {
 	}
 
 	tracef("parseArgs() parsing %q as program command; cfg=%+#v", p.lit, p.cfg.Prog)
-	prog := p.parseCommand(&p.cfg.Prog)
+	prog := p.parseCommand(p.cfg.Prog)
 
 	tracef("parseArgs() top level node is %T", prog)
 

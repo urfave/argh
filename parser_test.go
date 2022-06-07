@@ -24,7 +24,7 @@ func TestParser(t *testing.T) {
 				"pies", "-eat", "--wat", "hello", "mario",
 			},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
 							"e":   {},
@@ -98,8 +98,8 @@ func TestParser(t *testing.T) {
 				"pies", "--wat", "hello", "mario", "-eat",
 			},
 			cfg: &argh.ParserConfig{
-				Prog: func() argh.CommandConfig {
-					cmdCfg := argh.CommandConfig{
+				Prog: func() *argh.CommandConfig {
+					cmdCfg := &argh.CommandConfig{
 						Flags: &argh.Flags{
 							Map: map[string]argh.FlagConfig{
 								"e":   {Persist: true},
@@ -193,7 +193,7 @@ func TestParser(t *testing.T) {
 			name: "one positional arg",
 			args: []string{"pizzas", "excel"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{NValue: 1},
+				Prog: &argh.CommandConfig{NValue: 1},
 			},
 			expPT: []argh.Node{
 				&argh.Command{
@@ -219,7 +219,7 @@ func TestParser(t *testing.T) {
 			name: "many positional args",
 			args: []string{"pizzas", "excel", "wildly", "when", "feral"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					NValue:     argh.OneOrMoreValue,
 					ValueNames: []string{"word"},
 				},
@@ -267,7 +267,7 @@ func TestParser(t *testing.T) {
 			name: "long value-less flags",
 			args: []string{"pizzas", "--tasty", "--fresh", "--super-hot-right-now"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
 							"tasty":               {},
@@ -312,7 +312,7 @@ func TestParser(t *testing.T) {
 				"--please",
 			},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Commands: &argh.Commands{Map: map[string]argh.CommandConfig{}},
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
@@ -391,7 +391,7 @@ func TestParser(t *testing.T) {
 			name: "short value-less flags",
 			args: []string{"pizzas", "-t", "-f", "-s"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
 							"t": {},
@@ -429,7 +429,7 @@ func TestParser(t *testing.T) {
 			name: "compound short flags",
 			args: []string{"pizzas", "-aca", "-blol"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
 							"a": {},
@@ -484,7 +484,7 @@ func TestParser(t *testing.T) {
 			name: "mixed long short value flags",
 			args: []string{"pizzas", "-a", "--ca", "-b", "1312", "-lol"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Commands: &argh.Commands{Map: map[string]argh.CommandConfig{}},
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
@@ -549,7 +549,7 @@ func TestParser(t *testing.T) {
 			name: "nested commands with positional args",
 			args: []string{"pizzas", "fly", "freely", "sometimes", "and", "other", "times", "fry", "deeply", "--forever"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Commands: &argh.Commands{
 						Map: map[string]argh.CommandConfig{
 							"fly": argh.CommandConfig{
@@ -632,7 +632,7 @@ func TestParser(t *testing.T) {
 			name: "compound flags with values",
 			args: []string{"pizzas", "-need", "sauce", "heat", "love", "-also", "over9000"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
 							"a": {NValue: argh.ZeroOrMoreValue},
@@ -735,7 +735,7 @@ func TestParser(t *testing.T) {
 			name: "command specific flags",
 			args: []string{"pizzas", "fly", "--freely", "fry", "--deeply", "-wAt", "hugs"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Commands: &argh.Commands{
 						Map: map[string]argh.CommandConfig{
 							"fly": argh.CommandConfig{
@@ -835,7 +835,7 @@ func TestParser(t *testing.T) {
 			name: "total weirdo",
 			args: []string{"PIZZAs", "^wAT@golf", "^^hecKing", "goose", "bonk", "^^FIERCENESS@-2"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Commands: &argh.Commands{
 						Map: map[string]argh.CommandConfig{
 							"goose": argh.CommandConfig{
@@ -910,7 +910,7 @@ func TestParser(t *testing.T) {
 			name: "windows like",
 			args: []string{"hotdog", "/f", "/L", "/o:ppy", "hats"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
 							"f": {},
@@ -957,7 +957,7 @@ func TestParser(t *testing.T) {
 			name: "invalid bare assignment",
 			args: []string{"pizzas", "=", "--wat"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
 							"wat": {},

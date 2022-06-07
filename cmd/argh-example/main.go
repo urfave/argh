@@ -16,7 +16,7 @@ func main() {
 	log.SetFlags(0)
 
 	pCfg := argh.NewParserConfig()
-	pCfg.Prog = argh.CommandConfig{
+	pCfg.Prog = &argh.CommandConfig{
 		NValue:     argh.OneOrMoreValue,
 		ValueNames: []string{"topping"},
 		Flags: &argh.Flags{

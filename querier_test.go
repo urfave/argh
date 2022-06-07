@@ -19,7 +19,7 @@ func TestQuerier_Program(t *testing.T) {
 			name: "typical",
 			args: []string{"pizzas", "ahoy", "--treatsa", "fun"},
 			cfg: &argh.ParserConfig{
-				Prog: argh.CommandConfig{
+				Prog: &argh.CommandConfig{
 					Commands: &argh.Commands{
 						Map: map[string]argh.CommandConfig{
 							"ahoy": argh.CommandConfig{
