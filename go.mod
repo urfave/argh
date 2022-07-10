@@ -1,4 +1,4 @@
-module git.meatballhat.com/x/box-o-sand/argh
+module git.meatballhat.com/x/argh
 
 go 1.18
 

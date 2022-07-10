@@ -3,7 +3,7 @@ package argh_test
 import (
 	"testing"
 
-	"git.meatballhat.com/x/box-o-sand/argh"
+	"git.meatballhat.com/x/argh"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 )

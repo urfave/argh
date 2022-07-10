@@ -6,7 +6,7 @@ import (
 	"log"
 	"os"
 
-	"git.meatballhat.com/x/box-o-sand/argh"
+	"git.meatballhat.com/x/argh"
 	"github.com/davecgh/go-spew/spew"
 )
 
