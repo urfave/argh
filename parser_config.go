@@ -44,8 +44,7 @@ func NewParserConfig(opts ...ParserOption) *ParserConfig {
 	}
 
 	if pCfg.Prog == nil {
-		pCfg.Prog = &CommandConfig{}
-		pCfg.Prog.init()
+		pCfg.Prog = NewCommandConfig()
 	}
 
 	if pCfg.ScannerConfig == nil {
@@ -60,6 +59,13 @@ type CommandConfig struct {
 	ValueNames []string
 	Flags      *Flags
 	Commands   *Commands
+}
+
+func NewCommandConfig() *CommandConfig {
+	cmdCfg := &CommandConfig{}
+	cmdCfg.init()
+
+	return cmdCfg
 }
 
 func (cCfg *CommandConfig) init() {
@@ -131,6 +137,16 @@ func (fl *Flags) Get(name string) (FlagConfig, bool) {
 	return flCfg, ok
 }
 
+func (fl *Flags) Set(name string, flCfg FlagConfig) {
+	tracef("Flags.Set(%[1]q, %+#[2]v)", name, flCfg)
+
+	if fl.Map == nil {
+		fl.Map = map[string]FlagConfig{}
+	}
+
+	fl.Map[name] = flCfg
+}
+
 type Commands struct {
 	Map map[string]CommandConfig
 }
@@ -144,4 +160,14 @@ func (cmd *Commands) Get(name string) (CommandConfig, bool) {
 
 	cmdCfg, ok := cmd.Map[name]
 	return cmdCfg, ok
+}
+
+func (cmd *Commands) Set(name string, cmdCfg CommandConfig) {
+	tracef("Commands.Set(%[1]q, %+#[2]v)", name, cmdCfg)
+
+	if cmd.Map == nil {
+		cmd.Map = map[string]CommandConfig{}
+	}
+
+	cmd.Map[name] = cmdCfg
 }
