@@ -1,6 +1,7 @@
 package argh
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -11,6 +12,8 @@ import (
 var (
 	tracingEnabled = os.Getenv("ARGH_TRACING") == "enabled"
 	traceLogger    *log.Logger
+
+	Error = errors.New("argh error")
 )
 
 func init() {

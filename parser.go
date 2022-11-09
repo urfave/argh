@@ -26,10 +26,13 @@ type ParseTree struct {
 
 func ParseArgs(args []string, pCfg *ParserConfig) (*ParseTree, error) {
 	p := &parser{}
-	p.init(
+
+	if err := p.init(
 		strings.NewReader(strings.Join(args, string(nul))),
 		pCfg,
-	)
+	); err != nil {
+		return nil, err
+	}
 
 	tracef("ParseArgs(...) parser=%+#v", p)
 
@@ -40,11 +43,11 @@ func (p *parser) addError(msg string) {
 	p.errors.Add(Position{Column: int(p.pos)}, msg)
 }
 
-func (p *parser) init(r io.Reader, pCfg *ParserConfig) {
+func (p *parser) init(r io.Reader, pCfg *ParserConfig) error {
 	p.errors = ParserErrorList{}
 
 	if pCfg == nil {
-		pCfg = POSIXyParserConfig
+		return fmt.Errorf("nil parser config: %w", Error)
 	}
 
 	p.cfg = pCfg
@@ -52,6 +55,8 @@ func (p *parser) init(r io.Reader, pCfg *ParserConfig) {
 	p.s = NewScanner(r, pCfg.ScannerConfig)
 
 	p.next()
+
+	return nil
 }
 
 func (p *parser) parseArgs() (*ParseTree, error) {
@@ -179,6 +184,13 @@ func (p *parser) parseCommand(cCfg *CommandConfig) Node {
 		node.Values = values
 	}
 
+	if cCfg.On != nil {
+		tracef("parseCommand(...) calling command config handler for node=%+#v", node)
+		cCfg.On(*node)
+	} else {
+		tracef("parseCommand(...) no command config handler for node=%+#v", node)
+	}
+
 	tracef("parseCommand(...) returning node=%+#v", node)
 	return node
 }
@@ -209,12 +221,12 @@ func (p *parser) parseShortFlag(flags *Flags) Node {
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
-		p.addError(fmt.Sprintf("unknown flag %q", node.Name))
+		p.addError(fmt.Sprintf("unknown flag %[1]q", node.Name))
 
 		return node
 	}
 
-	return p.parseConfiguredFlag(node, flCfg)
+	return p.parseConfiguredFlag(node, flCfg, nil)
 }
 
 func (p *parser) parseLongFlag(flags *Flags) Node {
@@ -222,48 +234,98 @@ func (p *parser) parseLongFlag(flags *Flags) Node {
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
-		p.addError(fmt.Sprintf("unknown flag %q", node.Name))
+		p.addError(fmt.Sprintf("unknown flag %[1]q", node.Name))
 
 		return node
 	}
 
-	return p.parseConfiguredFlag(node, flCfg)
+	return p.parseConfiguredFlag(node, flCfg, nil)
 }
 
 func (p *parser) parseCompoundShortFlag(flags *Flags) Node {
-	flagNodes := []Node{}
+	unparsedFlags := []*Flag{}
+	unparsedFlagConfigs := []FlagConfig{}
 
 	withoutFlagPrefix := p.lit[1:]
 
-	for i, r := range withoutFlagPrefix {
+	for _, r := range withoutFlagPrefix {
 		node := &Flag{Name: string(r)}
 
-		if i == len(withoutFlagPrefix)-1 {
-			flCfg, ok := flags.Get(node.Name)
-			if !ok {
-				p.addError(fmt.Sprintf("unknown flag %q", node.Name))
-
-				continue
-			}
-
-			flagNodes = append(flagNodes, p.parseConfiguredFlag(node, flCfg))
+		flCfg, ok := flags.Get(node.Name)
+		if !ok {
+			p.addError(fmt.Sprintf("unknown flag %[1]q", node.Name))
 
 			continue
 		}
 
-		flagNodes = append(flagNodes, node)
+		unparsedFlags = append(unparsedFlags, node)
+		unparsedFlagConfigs = append(unparsedFlagConfigs, flCfg)
+	}
+
+	flagNodes := []Node{}
+
+	for i, node := range unparsedFlags {
+		flCfg := unparsedFlagConfigs[i]
+
+		if i != len(unparsedFlags)-1 {
+			// NOTE: if a compound short flag is configured to accept
+			// more than zero values but is not the last flag in the
+			// group, it will be parsed with an override NValue of
+			// ZeroValue so that it does not consume the next token.
+			if flCfg.NValue.Required() {
+				p.addError(
+					fmt.Sprintf(
+						"short flag %[1]q before end of compound group expects value",
+						node.Name,
+					),
+				)
+			}
+
+			flagNodes = append(
+				flagNodes,
+				p.parseConfiguredFlag(node, flCfg, zeroValuePtr),
+			)
+
+			continue
+		}
+
+		flagNodes = append(flagNodes, p.parseConfiguredFlag(node, flCfg, nil))
 	}
 
 	return &CompoundShortFlag{Nodes: flagNodes}
 }
 
-func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
+func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverride *NValue) Node {
 	values := map[string]string{}
 	nodes := []Node{}
+
+	atExit := func() *Flag {
+		if len(nodes) > 0 {
+			node.Nodes = nodes
+		}
+
+		if len(values) > 0 {
+			node.Values = values
+		}
+
+		if flCfg.On != nil {
+			tracef("parseConfiguredFlag(...) calling flag config handler for node=%+#[1]v", node)
+			flCfg.On(*node)
+		} else {
+			tracef("parseConfiguredFlag(...) no flag config handler for node=%+#[1]v", node)
+		}
+
+		return node
+	}
 
 	identIndex := 0
 
 	for i := 0; p.tok != EOL; i++ {
+		if nValueOverride != nil && !(*nValueOverride).Contains(identIndex) {
+			tracef("parseConfiguredFlag(...) identIndex=%d exceeds expected=%v; breaking", identIndex, *nValueOverride)
+			break
+		}
+
 		if !flCfg.NValue.Contains(identIndex) {
 			tracef("parseConfiguredFlag(...) identIndex=%d exceeds expected=%v; breaking", identIndex, flCfg.NValue)
 			break
@@ -308,27 +370,11 @@ func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig) Node {
 			tracef("parseConfiguredFlag(...) breaking on %s %q %v; setting buffered=true", p.tok, p.lit, p.pos)
 			p.buffered = true
 
-			if len(nodes) > 0 {
-				node.Nodes = nodes
-			}
-
-			if len(values) > 0 {
-				node.Values = values
-			}
-
-			return node
+			return atExit()
 		}
 	}
 
-	if len(nodes) > 0 {
-		node.Nodes = nodes
-	}
-
-	if len(values) > 0 {
-		node.Values = values
-	}
-
-	return node
+	return atExit()
 }
 
 func (p *parser) parsePassthrough() Node {

@@ -1,3 +1,5 @@
+BENCHTIME ?= 10s
+
 .PHONY: all
 all: test
 
@@ -8,6 +10,10 @@ clean:
 .PHONY: test
 test:
 	go test -v -coverprofile=coverage.out ./...
+
+.PHONY: bench
+bench:
+	go test -v -bench . -benchtime $(BENCHTIME) ./...
 
 .PHONY: show-cover
 show-cover:

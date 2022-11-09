@@ -7,10 +7,21 @@ const (
 )
 
 var (
-	POSIXyParserConfig = NewParserConfig()
+	zeroValuePtr = func() *NValue {
+		v := ZeroValue
+		return &v
+	}()
 )
 
 type NValue int
+
+func (nv NValue) Required() bool {
+	if nv == OneOrMoreValue {
+		return true
+	}
+
+	return int(nv) >= 1
+}
 
 func (nv NValue) Contains(i int) bool {
 	tracef("NValue.Contains(%v)", i)
@@ -60,6 +71,8 @@ type CommandConfig struct {
 	ValueNames []string
 	Flags      *Flags
 	Commands   *Commands
+
+	On func(Command)
 }
 
 func (cCfg *CommandConfig) init() {
@@ -100,6 +113,8 @@ type FlagConfig struct {
 	NValue     NValue
 	Persist    bool
 	ValueNames []string
+
+	On func(Flag)
 }
 
 type Flags struct {

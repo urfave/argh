@@ -29,7 +29,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ast := argh.NewQuerier(pt.Nodes).AST()
+	ast := argh.ToAST(pt.Nodes)
 
 	if asJSON {
 		b, err := json.MarshalIndent(ast, "", "  ")

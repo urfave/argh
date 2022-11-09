@@ -20,6 +20,7 @@ library [parser](https://pkg.go.dev/go/parser).
 - support both POSIX-y and Windows-y styles
 - build a printable/JSON-able parse tree
 - support rich error reporting
+- support event-like reactive parsing
 
 <!--
 vim:tw=90
