@@ -92,7 +92,7 @@ func (p *parser) next() {
 func (p *parser) parseCommand(cCfg *CommandConfig) Node {
 	tracef("parseCommand(%+#v)", cCfg)
 
-	node := &Command{
+	node := &CommandFlag{
 		Name: p.lit,
 	}
 	values := map[string]string{}
@@ -217,7 +217,7 @@ func (p *parser) parseFlag(flags *Flags) Node {
 }
 
 func (p *parser) parseShortFlag(flags *Flags) Node {
-	node := &Flag{Name: string(p.lit[1])}
+	node := &CommandFlag{Name: string(p.lit[1])}
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
@@ -230,7 +230,7 @@ func (p *parser) parseShortFlag(flags *Flags) Node {
 }
 
 func (p *parser) parseLongFlag(flags *Flags) Node {
-	node := &Flag{Name: string(p.lit[2:])}
+	node := &CommandFlag{Name: string(p.lit[2:])}
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
@@ -243,13 +243,13 @@ func (p *parser) parseLongFlag(flags *Flags) Node {
 }
 
 func (p *parser) parseCompoundShortFlag(flags *Flags) Node {
-	unparsedFlags := []*Flag{}
+	unparsedFlags := []*CommandFlag{}
 	unparsedFlagConfigs := []FlagConfig{}
 
 	withoutFlagPrefix := p.lit[1:]
 
 	for _, r := range withoutFlagPrefix {
-		node := &Flag{Name: string(r)}
+		node := &CommandFlag{Name: string(r)}
 
 		flCfg, ok := flags.Get(node.Name)
 		if !ok {
@@ -295,11 +295,11 @@ func (p *parser) parseCompoundShortFlag(flags *Flags) Node {
 	return &CompoundShortFlag{Nodes: flagNodes}
 }
 
-func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverride *NValue) Node {
+func (p *parser) parseConfiguredFlag(node *CommandFlag, flCfg FlagConfig, nValueOverride *NValue) Node {
 	values := map[string]string{}
 	nodes := []Node{}
 
-	atExit := func() *Flag {
+	atExit := func() *CommandFlag {
 		if len(nodes) > 0 {
 			node.Nodes = nodes
 		}

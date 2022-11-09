@@ -72,7 +72,7 @@ type CommandConfig struct {
 	Flags      *Flags
 	Commands   *Commands
 
-	On func(Command)
+	On func(CommandFlag)
 }
 
 func (cCfg *CommandConfig) init() {
@@ -114,7 +114,7 @@ type FlagConfig struct {
 	Persist    bool
 	ValueNames []string
 
-	On func(Flag)
+	On func(CommandFlag)
 }
 
 type Flags struct {

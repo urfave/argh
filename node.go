@@ -25,13 +25,9 @@ type BadArg struct {
 	To      Pos
 }
 
-type Command struct {
-	Name   string
-	Values map[string]string
-	Nodes  []Node
-}
-
-type Flag struct {
+// CommandFlag is a Node with a name, a slice of child Nodes, and
+// potentially a map of named values derived from the child Nodes
+type CommandFlag struct {
 	Name   string
 	Values map[string]string
 	Nodes  []Node

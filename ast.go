@@ -25,7 +25,7 @@ func ToAST(parseTree []Node) []Node {
 			continue
 		}
 
-		if v, ok := node.(*Command); ok {
+		if v, ok := node.(*CommandFlag); ok {
 			astNodes := ToAST(v.Nodes)
 
 			if len(astNodes) == 0 {
@@ -34,30 +34,11 @@ func ToAST(parseTree []Node) []Node {
 
 			ret = append(
 				ret,
-				&Command{
+				&CommandFlag{
 					Name:   v.Name,
 					Values: v.Values,
 					Nodes:  astNodes,
 				})
-
-			continue
-		}
-
-		if v, ok := node.(*Flag); ok {
-			astNodes := ToAST(v.Nodes)
-
-			if len(astNodes) == 0 {
-				astNodes = nil
-			}
-
-			ret = append(
-				ret,
-				&Flag{
-					Name:   v.Name,
-					Values: v.Values,
-					Nodes:  astNodes,
-				},
-			)
 
 			continue
 		}
