@@ -1,4 +1,4 @@
-module git.meatballhat.com/x/argh
+module github.com/urfave/argh
 
 go 1.18
 
