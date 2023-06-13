@@ -7,7 +7,7 @@ func ToAST(parseTree []Node) []Node {
 	ret := []Node{}
 
 	for i, node := range parseTree {
-		tracef(2, "ToAST i=%d node type=%T", i, node)
+		tracef("ToAST i=%d node type=%T", i, node)
 
 		if _, ok := node.(*ArgDelimiter); ok {
 			continue

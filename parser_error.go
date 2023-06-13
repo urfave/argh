@@ -13,6 +13,10 @@ type ParserError struct {
 }
 
 func (e ParserError) Error() string {
+	if e.Pos.IsValid() {
+		return e.Pos.String() + ":" + e.Msg
+	}
+
 	return e.Msg
 }
 

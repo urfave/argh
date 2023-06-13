@@ -55,7 +55,7 @@ func (s *Scanner) Scan() (Token, string, Pos) {
 		return s.scanArg()
 	}
 
-	return INVALID, string(ch), pos
+	return ILLEGAL, string(ch), pos
 }
 
 func (s *Scanner) read() (rune, Pos) {

@@ -5,7 +5,7 @@ package argh
 import "fmt"
 
 const (
-	INVALID Token = iota
+	ILLEGAL Token = iota
 	EOL
 	EMPTY                 // ''
 	BS                    // ' ' '\t' '\n'

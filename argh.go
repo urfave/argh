@@ -2,44 +2,36 @@ package argh
 
 import (
 	"errors"
+	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"runtime"
 )
 
 var (
+	tracingEnabled = os.Getenv("ARGH_TRACING") == "enabled"
+	traceLogger    *log.Logger
+
 	Error = errors.New("argh error")
 )
 
-type Argh interface {
-	Parse([]string) error
-	Prog() *CommandConfig
-	AST() []Node
-}
-
-type defaultArgh struct {
-	pc ParserConfig
-	pt ParseTree
-}
-
-func New(opts ...ParserOption) Argh {
-	return &defaultArgh{
-		pc: *NewParserConfig(opts...),
-	}
-}
-
-func (a *defaultArgh) Prog() *CommandConfig {
-	return a.pc.Prog
-}
-
-func (a *defaultArgh) Parse(args []string) error {
-	pt, err := ParseArgs(args, &a.pc)
-	if err != nil {
-		return err
+func init() {
+	if !tracingEnabled {
+		return
 	}
 
-	a.pt = *pt
-
-	return nil
+	traceLogger = log.New(os.Stderr, "ARGH TRACING: ", 0)
 }
 
-func (a *defaultArgh) AST() []Node {
-	return ToAST(a.pt.Nodes)
+func tracef(format string, v ...any) {
+	if !tracingEnabled {
+		return
+	}
+
+	if _, file, line, ok := runtime.Caller(1); ok {
+		format = fmt.Sprintf("%v:%v ", filepath.Base(file), line) + format
+	}
+
+	traceLogger.Printf(format, v...)
 }

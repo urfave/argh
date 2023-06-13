@@ -3,10 +3,11 @@ package argh_test
 import (
 	"flag"
 	"fmt"
+	"strconv"
 	"testing"
 	"time"
 
-	"github.com/urfave/argh"
+	"git.meatballhat.com/x/argh"
 )
 
 func ptrTo[T any](v T) *T {
@@ -77,28 +78,79 @@ func BenchmarkArgh(b *testing.B) {
 			pCfg := argh.NewParserConfig()
 			pCfg.Prog = &argh.CommandConfig{
 				Flags: &argh.Flags{
-					Map: map[string]*argh.FlagConfig{
-						"ok": {},
+					Map: map[string]argh.FlagConfig{
+						"ok": {
+							On: func(fl argh.CommandFlag) {
+								okFlag = ptrTo(true)
+							},
+						},
 						"dur": {
 							NValue: 1,
+							On: func(fl argh.CommandFlag) {
+								if v, ok := fl.Values["0"]; ok {
+									if pt, err := time.ParseDuration(v); err != nil {
+										durFlag = ptrTo(pt)
+									}
+								}
+							},
 						},
 						"f64": {
 							NValue: 1,
+							On: func(fl argh.CommandFlag) {
+								if v, ok := fl.Values["0"]; ok {
+									if f, err := strconv.ParseFloat(v, 64); err == nil {
+										f64Flag = ptrTo(f)
+									}
+								}
+							},
 						},
 						"i": {
 							NValue: 1,
+							On: func(fl argh.CommandFlag) {
+								if v, ok := fl.Values["0"]; ok {
+									if i, err := strconv.ParseInt(v, 10, 64); err == nil {
+										iFlag = ptrTo(int(i))
+									}
+								}
+							},
 						},
 						"i64": {
 							NValue: 1,
+							On: func(fl argh.CommandFlag) {
+								if v, ok := fl.Values["0"]; ok {
+									if i, err := strconv.ParseInt(v, 10, 64); err == nil {
+										i64Flag = ptrTo(i)
+									}
+								}
+							},
 						},
 						"s": {
 							NValue: 1,
+							On: func(fl argh.CommandFlag) {
+								if v, ok := fl.Values["0"]; ok {
+									sFlag = ptrTo(v)
+								}
+							},
 						},
 						"u": {
 							NValue: 1,
+							On: func(fl argh.CommandFlag) {
+								if v, ok := fl.Values["0"]; ok {
+									if u, err := strconv.ParseUint(v, 10, 64); err == nil {
+										uFlag = ptrTo(uint(u))
+									}
+								}
+							},
 						},
 						"u64": {
 							NValue: 1,
+							On: func(fl argh.CommandFlag) {
+								if v, ok := fl.Values["0"]; ok {
+									if u, err := strconv.ParseUint(v, 10, 64); err == nil {
+										u64Flag = ptrTo(u)
+									}
+								}
+							},
 						},
 					},
 				},

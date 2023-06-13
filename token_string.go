@@ -8,7 +8,7 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[INVALID-0]
+	_ = x[ILLEGAL-0]
 	_ = x[EOL-1]
 	_ = x[EMPTY-2]
 	_ = x[BS-3]
@@ -23,7 +23,7 @@ func _() {
 	_ = x[STOP_FLAG-12]
 }
 
-const _Token_name = "INVALIDEOLEMPTYBSIDENTARG_DELIMITERASSIGNMULTI_VALUE_DELIMITERLONG_FLAGSHORT_FLAGCOMPOUND_SHORT_FLAGSTDIN_FLAGSTOP_FLAG"
+const _Token_name = "ILLEGALEOLEMPTYBSIDENTARG_DELIMITERASSIGNMULTI_VALUE_DELIMITERLONG_FLAGSHORT_FLAGCOMPOUND_SHORT_FLAGSTDIN_FLAGSTOP_FLAG"
 
 var _Token_index = [...]uint8{0, 7, 10, 15, 17, 22, 35, 41, 62, 71, 81, 100, 110, 119}
 
