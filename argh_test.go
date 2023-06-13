@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"git.meatballhat.com/x/argh"
+	"github.com/urfave/argh"
 )
 
 func ptrTo[T any](v T) *T {

@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"git.meatballhat.com/x/argh"
+	"github.com/urfave/argh"
 )
 
 func ExampleArgh_simple() {
