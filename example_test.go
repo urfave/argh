@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/argh"
 )
 
-func ExampleArgh_simple() {
+func ExampleParserConfig_simple() {
 	pCfg := argh.NewParserConfig()
 	pCfg.Prog = &argh.CommandConfig{
 		NValue:     argh.OneOrMoreValue,
