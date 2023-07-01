@@ -99,6 +99,19 @@ func (cCfg *CommandConfig) GetCommandConfig(name string) (CommandConfig, bool) {
 	return cCfg.Commands.Get(name)
 }
 
+func (cCfg *CommandConfig) SetCommandConfig(name string, sCfg *CommandConfig) {
+	tracef("CommandConfig.SetCommandConfig(%q, ...)", name)
+
+	if cCfg.Commands == nil {
+		cCfg.Commands = &Commands{Map: map[string]CommandConfig{}}
+	}
+
+	sCfg.init()
+	sCfg.Flags.Parent = cCfg.Flags
+
+	cCfg.Commands.Set(name, sCfg)
+}
+
 func (cCfg *CommandConfig) GetFlagConfig(name string) (FlagConfig, bool) {
 	tracef("CommandConfig.GetFlagConfig(%q)", name)
 
@@ -107,6 +120,16 @@ func (cCfg *CommandConfig) GetFlagConfig(name string) (FlagConfig, bool) {
 	}
 
 	return cCfg.Flags.Get(name)
+}
+
+func (cCfg *CommandConfig) SetFlagConfig(name string, flCfg *FlagConfig) {
+	tracef("CommandConfig.SetFlagConfig(%q, ...)", name)
+
+	if cCfg.Flags == nil {
+		cCfg.Flags = &Flags{Map: map[string]FlagConfig{}}
+	}
+
+	cCfg.Flags.Set(name, flCfg)
 }
 
 type FlagConfig struct {
@@ -146,6 +169,16 @@ func (fl *Flags) Get(name string) (FlagConfig, bool) {
 	return flCfg, ok
 }
 
+func (fl *Flags) Set(name string, flCfg *FlagConfig) {
+	tracef("Flags.Get(%q)", name)
+
+	if fl.Map == nil {
+		fl.Map = map[string]FlagConfig{}
+	}
+
+	fl.Map[name] = *flCfg
+}
+
 type Commands struct {
 	Map map[string]CommandConfig
 }
@@ -159,4 +192,16 @@ func (cmd *Commands) Get(name string) (CommandConfig, bool) {
 
 	cmdCfg, ok := cmd.Map[name]
 	return cmdCfg, ok
+}
+
+func (cmd *Commands) Set(name string, cCfg *CommandConfig) {
+	tracef("Commands.Set(%q, ...)", name)
+
+	if cmd.Map == nil {
+		cmd.Map = map[string]CommandConfig{}
+	}
+
+	cCfg.init()
+
+	cmd.Map[name] = *cCfg
 }
