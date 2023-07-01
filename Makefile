@@ -1,11 +1,20 @@
 BENCHTIME ?= 10s
+STRINGER := .local/bin/stringer
 
 .PHONY: all
-all: test
+all: generate test
 
 .PHONY: clean
 clean:
 	rm -f coverage.out
+
+.PHONY: distclean
+distclean: clean
+	rm -f $(STRINGER)
+
+.PHONY: generate
+generate: $(STRINGER)
+	PATH=$(PWD)/.local/bin:$(PATH) go generate ./...
 
 .PHONY: test
 test:
@@ -18,3 +27,6 @@ bench:
 .PHONY: show-cover
 show-cover:
 	go tool cover -func=coverage.out
+
+$(STRINGER):
+	GOBIN=$(PWD)/.local/bin go install golang.org/x/tools/cmd/stringer@latest

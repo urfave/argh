@@ -10,22 +10,22 @@ import (
 )
 
 var (
-	tracingEnabled = os.Getenv("ARGH_TRACING") == "enabled"
-	traceLogger    *log.Logger
+	isTracingOn = os.Getenv("ARGH_TRACING") == "on"
+	traceLogger *log.Logger
 
 	Error = errors.New("argh error")
 )
 
 func init() {
-	if !tracingEnabled {
+	if !isTracingOn {
 		return
 	}
 
-	traceLogger = log.New(os.Stderr, "ARGH TRACING: ", 0)
+	traceLogger = log.New(os.Stderr, "## ARGH TRACE ", 0)
 }
 
 func tracef(format string, v ...any) {
-	if !tracingEnabled {
+	if !isTracingOn {
 		return
 	}
 
