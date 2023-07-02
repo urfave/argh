@@ -72,7 +72,7 @@ type CommandConfig struct {
 	Flags      *Flags
 	Commands   *Commands
 
-	On func(CommandFlag)
+	On func(CommandFlag) `json:"-"`
 }
 
 func (cCfg *CommandConfig) init() {
@@ -137,7 +137,7 @@ type FlagConfig struct {
 	Persist    bool
 	ValueNames []string
 
-	On func(CommandFlag)
+	On func(CommandFlag) `json:"-"`
 }
 
 type Flags struct {

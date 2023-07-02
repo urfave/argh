@@ -62,6 +62,10 @@ func ExampleParserConfig_simple() {
 		"hello", "-a=from", "the", "ether", "sub", "marge", "patty", "selma", "-b",
 	}
 
+	if _, err := json.Marshal(pCfg.Prog); err != nil {
+		log.Fatal(err)
+	}
+
 	pt, err := argh.ParseArgs(os.Args, pCfg)
 	if err != nil {
 		argh.PrintParserError(os.Stderr, err)
