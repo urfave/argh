@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/argh"
 )
 
-func ExampleParserConfig_simple() {
+func ExampleParserConfig() {
 	state := map[string]argh.CommandFlag{}
 
 	pCfg := argh.NewParserConfig()
@@ -45,7 +45,7 @@ func ExampleParserConfig_simple() {
 		},
 	})
 
-	pCfg.Prog.SetCommandConfig("sub", &argh.CommandConfig{
+	sub := &argh.CommandConfig{
 		NValue:     3,
 		ValueNames: []string{"pilot", "navigator", "comms"},
 		On: func(cf argh.CommandFlag) {
@@ -55,11 +55,25 @@ func ExampleParserConfig_simple() {
 			fmt.Printf("prog sub Values: %[1]q\n", cf.Values)
 			fmt.Printf("prog sub len(Nodes): %[1]v\n", len(cf.Nodes))
 		},
+	}
+
+	sub.SetFlagConfig("c", &argh.FlagConfig{
+		NValue:     1,
+		ValueNames: []string{"feels"},
+		On: func(cf argh.CommandFlag) {
+			state["c"] = cf
+
+			fmt.Printf("prog sub -c Name: %[1]q\n", cf.Name)
+			fmt.Printf("prog sub -c Values: %[1]q\n", cf.Values)
+			fmt.Printf("prog sub -c len(Nodes): %[1]v\n", len(cf.Nodes))
+		},
 	})
+
+	pCfg.Prog.SetCommandConfig("sub", sub)
 
 	// simulate command line args
 	os.Args = []string{
-		"hello", "-a=from", "the", "ether", "sub", "marge", "patty", "selma", "-b",
+		"hello", "-a=from", "the", "ether", "sub", "marge", "-c=hurlish", "patty", "selma", "-b",
 	}
 
 	if _, err := json.Marshal(pCfg.Prog); err != nil {
@@ -90,12 +104,15 @@ func ExampleParserConfig_simple() {
 	// prog -a Name: "a"
 	// prog -a Values: map["0":"from" "1":"the"]
 	// prog -a len(Nodes): 4
+	// prog sub -c Name: "c"
+	// prog sub -c Values: map["feels":"hurlish"]
+	// prog sub -c len(Nodes): 2
 	// prog -b Name: "b"
 	// prog -b Values: map[]
 	// prog -b len(Nodes): 0
 	// prog sub Name: "sub"
 	// prog sub Values: map["comms":"selma" "navigator":"patty" "pilot":"marge"]
-	// prog sub len(Nodes): 8
+	// prog sub len(Nodes): 10
 	// prog Name: "hello"
 	// prog Values: map["val":"ether"]
 	// prog len(Nodes): 6
@@ -121,6 +138,18 @@ func ExampleParserConfig_simple() {
 	//     "Name": "b",
 	//     "Values": null,
 	//     "Nodes": null
+	//   },
+	//   "c": {
+	//     "Name": "c",
+	//     "Values": {
+	//       "feels": "hurlish"
+	//     },
+	//     "Nodes": [
+	//       {},
+	//       {
+	//         "Literal": "hurlish"
+	//       }
+	//     ]
 	//   },
 	//   "prog": {
 	//     "Name": "hello",
@@ -165,6 +194,19 @@ func ExampleParserConfig_simple() {
 	//           },
 	//           {},
 	//           {
+	//             "Name": "c",
+	//             "Values": {
+	//               "feels": "hurlish"
+	//             },
+	//             "Nodes": [
+	//               {},
+	//               {
+	//                 "Literal": "hurlish"
+	//               }
+	//             ]
+	//           },
+	//           {},
+	//           {
 	//             "Literal": "patty"
 	//           },
 	//           {},
@@ -192,6 +234,19 @@ func ExampleParserConfig_simple() {
 	//       {},
 	//       {
 	//         "Literal": "marge"
+	//       },
+	//       {},
+	//       {
+	//         "Name": "c",
+	//         "Values": {
+	//           "feels": "hurlish"
+	//         },
+	//         "Nodes": [
+	//           {},
+	//           {
+	//             "Literal": "hurlish"
+	//           }
+	//         ]
 	//       },
 	//       {},
 	//       {
