@@ -13,7 +13,7 @@ var (
 	isTracingOn = os.Getenv("ARGH_TRACING") == "on"
 	traceLogger *log.Logger
 
-	Error = errors.New("argh error")
+	Err = errors.New("argh error")
 )
 
 func init() {

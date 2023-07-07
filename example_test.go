@@ -15,57 +15,67 @@ func ExampleParserConfig() {
 	pCfg := argh.NewParserConfig()
 	pCfg.Prog.NValue = argh.OneOrMoreValue
 	pCfg.Prog.ValueNames = []string{"val"}
-	pCfg.Prog.On = func(cf argh.CommandFlag) {
+	pCfg.Prog.On = func(cf argh.CommandFlag) error {
 		state["prog"] = cf
 
 		fmt.Printf("prog Name: %[1]q\n", cf.Name)
 		fmt.Printf("prog Values: %[1]q\n", cf.Values)
 		fmt.Printf("prog len(Nodes): %[1]v\n", len(cf.Nodes))
+
+		return nil
 	}
 
 	pCfg.Prog.SetFlagConfig("a", &argh.FlagConfig{
 		NValue: 2,
-		On: func(cf argh.CommandFlag) {
+		On: func(cf argh.CommandFlag) error {
 			state["a"] = cf
 
 			fmt.Printf("prog -a Name: %[1]q\n", cf.Name)
 			fmt.Printf("prog -a Values: %[1]q\n", cf.Values)
 			fmt.Printf("prog -a len(Nodes): %[1]v\n", len(cf.Nodes))
+
+			return nil
 		},
 	})
 
 	pCfg.Prog.SetFlagConfig("b", &argh.FlagConfig{
 		Persist: true,
-		On: func(cf argh.CommandFlag) {
+		On: func(cf argh.CommandFlag) error {
 			state["b"] = cf
 
 			fmt.Printf("prog -b Name: %[1]q\n", cf.Name)
 			fmt.Printf("prog -b Values: %[1]q\n", cf.Values)
 			fmt.Printf("prog -b len(Nodes): %[1]v\n", len(cf.Nodes))
+
+			return nil
 		},
 	})
 
 	sub := &argh.CommandConfig{
 		NValue:     3,
 		ValueNames: []string{"pilot", "navigator", "comms"},
-		On: func(cf argh.CommandFlag) {
+		On: func(cf argh.CommandFlag) error {
 			state["sub"] = cf
 
 			fmt.Printf("prog sub Name: %[1]q\n", cf.Name)
 			fmt.Printf("prog sub Values: %[1]q\n", cf.Values)
 			fmt.Printf("prog sub len(Nodes): %[1]v\n", len(cf.Nodes))
+
+			return nil
 		},
 	}
 
 	sub.SetFlagConfig("c", &argh.FlagConfig{
 		NValue:     1,
 		ValueNames: []string{"feels"},
-		On: func(cf argh.CommandFlag) {
+		On: func(cf argh.CommandFlag) error {
 			state["c"] = cf
 
 			fmt.Printf("prog sub -c Name: %[1]q\n", cf.Name)
 			fmt.Printf("prog sub -c Values: %[1]q\n", cf.Values)
 			fmt.Printf("prog sub -c len(Nodes): %[1]v\n", len(cf.Nodes))
+
+			return nil
 		},
 	})
 

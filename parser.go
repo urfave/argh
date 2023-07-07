@@ -47,7 +47,7 @@ func (p *parser) init(r io.Reader, pCfg *ParserConfig) error {
 	p.errors = ParserErrorList{}
 
 	if pCfg == nil {
-		return fmt.Errorf("nil parser config: %w", Error)
+		return fmt.Errorf("nil parser config: %w", Err)
 	}
 
 	p.cfg = pCfg
@@ -66,7 +66,10 @@ func (p *parser) parseArgs() (*ParseTree, error) {
 	}
 
 	tracef("parseArgs() parsing %q as program command; cfg=%+#v", p.lit, p.cfg.Prog)
-	prog := p.parseCommand(p.cfg.Prog)
+	prog, err := p.parseCommand(p.cfg.Prog)
+	if err != nil {
+		return nil, err
+	}
 
 	tracef("parseArgs() top level node is %T", prog)
 
@@ -89,7 +92,7 @@ func (p *parser) next() {
 	tracef("next() after scan: %v %q %v", p.tok, p.lit, p.pos)
 }
 
-func (p *parser) parseCommand(cCfg *CommandConfig) Node {
+func (p *parser) parseCommand(cCfg *CommandConfig) (Node, error) {
 	tracef("parseCommand(%+#v)", cCfg)
 
 	node := &CommandFlag{
@@ -117,7 +120,12 @@ func (p *parser) parseCommand(cCfg *CommandConfig) Node {
 		if subCfg, ok := cCfg.GetCommandConfig(p.lit); ok {
 			subCommand := p.lit
 
-			nodes = append(nodes, p.parseCommand(&subCfg))
+			subNode, err := p.parseCommand(&subCfg)
+			if err != nil {
+				return node, err
+			}
+
+			nodes = append(nodes, subNode)
 
 			tracef("parseCommand(...) breaking after sub-command=%v", subCommand)
 			break
@@ -159,7 +167,10 @@ func (p *parser) parseCommand(cCfg *CommandConfig) Node {
 		case LONG_FLAG, SHORT_FLAG, COMPOUND_SHORT_FLAG:
 			tok := p.tok
 
-			flagNode := p.parseFlag(cCfg.Flags)
+			flagNode, err := p.parseFlag(cCfg.Flags)
+			if err != nil {
+				return node, err
+			}
 
 			tracef("parseCommand(...) appending %s node=%+#v", tok, flagNode)
 
@@ -186,13 +197,15 @@ func (p *parser) parseCommand(cCfg *CommandConfig) Node {
 
 	if cCfg.On != nil {
 		tracef("parseCommand(...) calling command config handler for node=%+#v", node)
-		cCfg.On(*node)
+		if err := cCfg.On(*node); err != nil {
+			return node, err
+		}
 	} else {
 		tracef("parseCommand(...) no command config handler for node=%+#v", node)
 	}
 
 	tracef("parseCommand(...) returning node=%+#v", node)
-	return node
+	return node, nil
 }
 
 func (p *parser) parseIdent() Node {
@@ -200,7 +213,7 @@ func (p *parser) parseIdent() Node {
 	return node
 }
 
-func (p *parser) parseFlag(flags *Flags) Node {
+func (p *parser) parseFlag(flags *Flags) (Node, error) {
 	switch p.tok {
 	case SHORT_FLAG:
 		tracef("parseFlag(...) parsing short flag with config=%+#v", flags)
@@ -216,33 +229,35 @@ func (p *parser) parseFlag(flags *Flags) Node {
 	panic(fmt.Sprintf("token %v cannot be parsed as flag", p.tok))
 }
 
-func (p *parser) parseShortFlag(flags *Flags) Node {
+func (p *parser) parseShortFlag(flags *Flags) (Node, error) {
 	node := &CommandFlag{Name: string(p.lit[1])}
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
-		p.addError(fmt.Sprintf("unknown flag %[1]q", node.Name))
+		errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
+		p.addError(errMsg)
 
-		return node
+		return node, fmt.Errorf(errMsg+": %[1]w", Err)
 	}
 
 	return p.parseConfiguredFlag(node, flCfg, nil)
 }
 
-func (p *parser) parseLongFlag(flags *Flags) Node {
+func (p *parser) parseLongFlag(flags *Flags) (Node, error) {
 	node := &CommandFlag{Name: string(p.lit[2:])}
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
-		p.addError(fmt.Sprintf("unknown flag %[1]q", node.Name))
+		errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
+		p.addError(errMsg)
 
-		return node
+		return node, fmt.Errorf(errMsg+": %[1]w", Err)
 	}
 
 	return p.parseConfiguredFlag(node, flCfg, nil)
 }
 
-func (p *parser) parseCompoundShortFlag(flags *Flags) Node {
+func (p *parser) parseCompoundShortFlag(flags *Flags) (Node, error) {
 	unparsedFlags := []*CommandFlag{}
 	unparsedFlagConfigs := []FlagConfig{}
 
@@ -253,9 +268,10 @@ func (p *parser) parseCompoundShortFlag(flags *Flags) Node {
 
 		flCfg, ok := flags.Get(node.Name)
 		if !ok {
-			p.addError(fmt.Sprintf("unknown flag %[1]q", node.Name))
+			errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
+			p.addError(errMsg)
 
-			continue
+			return nil, fmt.Errorf(errMsg+": %[1]w", Err)
 		}
 
 		unparsedFlags = append(unparsedFlags, node)
@@ -273,33 +289,43 @@ func (p *parser) parseCompoundShortFlag(flags *Flags) Node {
 			// group, it will be parsed with an override NValue of
 			// ZeroValue so that it does not consume the next token.
 			if flCfg.NValue.Required() {
-				p.addError(
-					fmt.Sprintf(
-						"short flag %[1]q before end of compound group expects value",
-						node.Name,
-					),
+				errMsg := fmt.Sprintf(
+					"short flag %[1]q before end of compound group expects value",
+					node.Name,
 				)
+				p.addError(
+					errMsg,
+				)
+
+				return nil, fmt.Errorf(errMsg+": %[1]w", Err)
 			}
 
-			flagNodes = append(
-				flagNodes,
-				p.parseConfiguredFlag(node, flCfg, zeroValuePtr),
-			)
+			flagNode, err := p.parseConfiguredFlag(node, flCfg, zeroValuePtr)
+			if err != nil {
+				return nil, err
+			}
+
+			flagNodes = append(flagNodes, flagNode)
 
 			continue
 		}
 
-		flagNodes = append(flagNodes, p.parseConfiguredFlag(node, flCfg, nil))
+		flagNode, err := p.parseConfiguredFlag(node, flCfg, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		flagNodes = append(flagNodes, flagNode)
 	}
 
-	return &CompoundShortFlag{Nodes: flagNodes}
+	return &CompoundShortFlag{Nodes: flagNodes}, nil
 }
 
-func (p *parser) parseConfiguredFlag(node *CommandFlag, flCfg FlagConfig, nValueOverride *NValue) Node {
+func (p *parser) parseConfiguredFlag(node *CommandFlag, flCfg FlagConfig, nValueOverride *NValue) (Node, error) {
 	values := map[string]string{}
 	nodes := []Node{}
 
-	atExit := func() *CommandFlag {
+	atExit := func() (*CommandFlag, error) {
 		if len(nodes) > 0 {
 			node.Nodes = nodes
 		}
@@ -310,12 +336,14 @@ func (p *parser) parseConfiguredFlag(node *CommandFlag, flCfg FlagConfig, nValue
 
 		if flCfg.On != nil {
 			tracef("parseConfiguredFlag(...) calling flag config handler for node=%+#[1]v", node)
-			flCfg.On(*node)
+			if err := flCfg.On(*node); err != nil {
+				return nil, err
+			}
 		} else {
 			tracef("parseConfiguredFlag(...) no flag config handler for node=%+#[1]v", node)
 		}
 
-		return node
+		return node, nil
 	}
 
 	identIndex := 0

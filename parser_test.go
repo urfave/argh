@@ -9,8 +9,9 @@ import (
 )
 
 func TestParser(t *testing.T) {
-	traceOnCommandFlag := func(cmd argh.CommandFlag) {
+	traceOnCommandFlag := func(cmd argh.CommandFlag) error {
 		t.Logf("CommandFlag.On: %+#[1]v", cmd)
+		return nil
 	}
 
 	for _, tc := range []struct {
