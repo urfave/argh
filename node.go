@@ -33,6 +33,16 @@ type CommandFlag struct {
 	Nodes  []Node
 }
 
+type CommandFlagError struct {
+	Pos  Position
+	Node CommandFlag
+	Msg  string
+}
+
+func (e CommandFlagError) Error() string {
+	return e.Msg
+}
+
 type StdinFlag struct{}
 
 type StopFlag struct{}

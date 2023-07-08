@@ -237,7 +237,11 @@ func (p *parser) parseShortFlag(flags *Flags) (Node, error) {
 		errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
 		p.addError(errMsg)
 
-		return node, fmt.Errorf(errMsg+": %[1]w", Err)
+		return node, &CommandFlagError{
+			Pos:  Position{Column: int(p.pos)},
+			Node: *node,
+			Msg:  errMsg,
+		}
 	}
 
 	return p.parseConfiguredFlag(node, flCfg, nil)
@@ -251,7 +255,11 @@ func (p *parser) parseLongFlag(flags *Flags) (Node, error) {
 		errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
 		p.addError(errMsg)
 
-		return node, fmt.Errorf(errMsg+": %[1]w", Err)
+		return node, &CommandFlagError{
+			Pos:  Position{Column: int(p.pos)},
+			Node: *node,
+			Msg:  errMsg,
+		}
 	}
 
 	return p.parseConfiguredFlag(node, flCfg, nil)
@@ -271,7 +279,11 @@ func (p *parser) parseCompoundShortFlag(flags *Flags) (Node, error) {
 			errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
 			p.addError(errMsg)
 
-			return nil, fmt.Errorf(errMsg+": %[1]w", Err)
+			return node, &CommandFlagError{
+				Pos:  Position{Column: int(p.pos)},
+				Node: *node,
+				Msg:  errMsg,
+			}
 		}
 
 		unparsedFlags = append(unparsedFlags, node)
