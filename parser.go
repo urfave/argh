@@ -95,7 +95,7 @@ func (p *parser) next() {
 func (p *parser) parseCommand(cCfg *CommandConfig) (Node, error) {
 	tracef("parseCommand(%+#v)", cCfg)
 
-	node := &CommandFlag{
+	node := &Command{
 		Name: p.lit,
 	}
 	values := map[string]string{}
@@ -230,14 +230,14 @@ func (p *parser) parseFlag(flags *Flags) (Node, error) {
 }
 
 func (p *parser) parseShortFlag(flags *Flags) (Node, error) {
-	node := &CommandFlag{Name: string(p.lit[1])}
+	node := &Flag{Name: string(p.lit[1])}
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
 		errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
 		p.addError(errMsg)
 
-		return node, &CommandFlagError{
+		return node, &FlagError{
 			Pos:  Position{Column: int(p.pos)},
 			Node: *node,
 			Msg:  errMsg,
@@ -248,14 +248,14 @@ func (p *parser) parseShortFlag(flags *Flags) (Node, error) {
 }
 
 func (p *parser) parseLongFlag(flags *Flags) (Node, error) {
-	node := &CommandFlag{Name: string(p.lit[2:])}
+	node := &Flag{Name: string(p.lit[2:])}
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
 		errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
 		p.addError(errMsg)
 
-		return node, &CommandFlagError{
+		return node, &FlagError{
 			Pos:  Position{Column: int(p.pos)},
 			Node: *node,
 			Msg:  errMsg,
@@ -266,20 +266,20 @@ func (p *parser) parseLongFlag(flags *Flags) (Node, error) {
 }
 
 func (p *parser) parseCompoundShortFlag(flags *Flags) (Node, error) {
-	unparsedFlags := []*CommandFlag{}
+	unparsedFlags := []*Flag{}
 	unparsedFlagConfigs := []FlagConfig{}
 
 	withoutFlagPrefix := p.lit[1:]
 
 	for _, r := range withoutFlagPrefix {
-		node := &CommandFlag{Name: string(r)}
+		node := &Flag{Name: string(r)}
 
 		flCfg, ok := flags.Get(node.Name)
 		if !ok {
 			errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
 			p.addError(errMsg)
 
-			return node, &CommandFlagError{
+			return node, &FlagError{
 				Pos:  Position{Column: int(p.pos)},
 				Node: *node,
 				Msg:  errMsg,
@@ -333,11 +333,11 @@ func (p *parser) parseCompoundShortFlag(flags *Flags) (Node, error) {
 	return &CompoundShortFlag{Nodes: flagNodes}, nil
 }
 
-func (p *parser) parseConfiguredFlag(node *CommandFlag, flCfg FlagConfig, nValueOverride *NValue) (Node, error) {
+func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverride *NValue) (Node, error) {
 	values := map[string]string{}
 	nodes := []Node{}
 
-	atExit := func() (*CommandFlag, error) {
+	atExit := func() (*Flag, error) {
 		if len(nodes) > 0 {
 			node.Nodes = nodes
 		}

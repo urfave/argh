@@ -15,6 +15,10 @@ type CompoundShortFlag struct {
 	Nodes []Node
 }
 
+type MultiIdent struct {
+	Nodes []Node
+}
+
 type Ident struct {
 	Literal string
 }
@@ -25,21 +29,39 @@ type BadArg struct {
 	To      Pos
 }
 
-// CommandFlag is a Node with a name, a slice of child Nodes, and
+// Command is a Node with a name, a slice of child Nodes, and
 // potentially a map of named values derived from the child Nodes
-type CommandFlag struct {
+type Command struct {
 	Name   string
 	Values map[string]string
 	Nodes  []Node
 }
 
-type CommandFlagError struct {
+// Flag is a Node with a name, a slice of child Nodes, and
+// potentially a map of named values derived from the child Nodes
+type Flag struct {
+	Name   string
+	Values map[string]string
+	Nodes  []Node
+}
+
+type CommandError struct {
 	Pos  Position
-	Node CommandFlag
+	Node Node
 	Msg  string
 }
 
-func (e CommandFlagError) Error() string {
+func (e CommandError) Error() string {
+	return e.Msg
+}
+
+type FlagError struct {
+	Pos  Position
+	Node Node
+	Msg  string
+}
+
+func (e FlagError) Error() string {
 	return e.Msg
 }
 

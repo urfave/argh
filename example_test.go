@@ -10,13 +10,14 @@ import (
 )
 
 func ExampleParserConfig() {
-	state := map[string]argh.CommandFlag{}
+	cmdState := map[string]argh.Command{}
+	flagState := map[string]argh.Flag{}
 
 	pCfg := argh.NewParserConfig()
 	pCfg.Prog.NValue = argh.OneOrMoreValue
 	pCfg.Prog.ValueNames = []string{"val"}
-	pCfg.Prog.On = func(cf argh.CommandFlag) error {
-		state["prog"] = cf
+	pCfg.Prog.On = func(cf argh.Command) error {
+		cmdState["prog"] = cf
 
 		fmt.Printf("prog Name: %[1]q\n", cf.Name)
 		fmt.Printf("prog Values: %[1]q\n", cf.Values)
@@ -27,8 +28,8 @@ func ExampleParserConfig() {
 
 	pCfg.Prog.SetFlagConfig("a", &argh.FlagConfig{
 		NValue: 2,
-		On: func(cf argh.CommandFlag) error {
-			state["a"] = cf
+		On: func(cf argh.Flag) error {
+			flagState["a"] = cf
 
 			fmt.Printf("prog -a Name: %[1]q\n", cf.Name)
 			fmt.Printf("prog -a Values: %[1]q\n", cf.Values)
@@ -40,8 +41,8 @@ func ExampleParserConfig() {
 
 	pCfg.Prog.SetFlagConfig("b", &argh.FlagConfig{
 		Persist: true,
-		On: func(cf argh.CommandFlag) error {
-			state["b"] = cf
+		On: func(cf argh.Flag) error {
+			flagState["b"] = cf
 
 			fmt.Printf("prog -b Name: %[1]q\n", cf.Name)
 			fmt.Printf("prog -b Values: %[1]q\n", cf.Values)
@@ -54,8 +55,8 @@ func ExampleParserConfig() {
 	sub := &argh.CommandConfig{
 		NValue:     3,
 		ValueNames: []string{"pilot", "navigator", "comms"},
-		On: func(cf argh.CommandFlag) error {
-			state["sub"] = cf
+		On: func(cf argh.Command) error {
+			cmdState["sub"] = cf
 
 			fmt.Printf("prog sub Name: %[1]q\n", cf.Name)
 			fmt.Printf("prog sub Values: %[1]q\n", cf.Values)
@@ -68,8 +69,8 @@ func ExampleParserConfig() {
 	sub.SetFlagConfig("c", &argh.FlagConfig{
 		NValue:     1,
 		ValueNames: []string{"feels"},
-		On: func(cf argh.CommandFlag) error {
-			state["c"] = cf
+		On: func(cf argh.Flag) error {
+			flagState["c"] = cf
 
 			fmt.Printf("prog sub -c Name: %[1]q\n", cf.Name)
 			fmt.Printf("prog sub -c Values: %[1]q\n", cf.Values)
@@ -104,9 +105,15 @@ func ExampleParserConfig() {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 
-	fmt.Printf("state: ")
+	fmt.Printf("command state: ")
 
-	if err := enc.Encode(state); err != nil {
+	if err := enc.Encode(cmdState); err != nil {
+		log.Fatalf("failed to jsonify: %v", err)
+	}
+
+	fmt.Printf("flag state: ")
+
+	if err := enc.Encode(flagState); err != nil {
 		log.Fatalf("failed to jsonify: %v", err)
 	}
 
@@ -126,41 +133,7 @@ func ExampleParserConfig() {
 	// prog Name: "hello"
 	// prog Values: map["val":"ether"]
 	// prog len(Nodes): 6
-	// state: {
-	//   "a": {
-	//     "Name": "a",
-	//     "Values": {
-	//       "0": "from",
-	//       "1": "the"
-	//     },
-	//     "Nodes": [
-	//       {},
-	//       {
-	//         "Literal": "from"
-	//       },
-	//       {},
-	//       {
-	//         "Literal": "the"
-	//       }
-	//     ]
-	//   },
-	//   "b": {
-	//     "Name": "b",
-	//     "Values": null,
-	//     "Nodes": null
-	//   },
-	//   "c": {
-	//     "Name": "c",
-	//     "Values": {
-	//       "feels": "hurlish"
-	//     },
-	//     "Nodes": [
-	//       {},
-	//       {
-	//         "Literal": "hurlish"
-	//       }
-	//     ]
-	//   },
+	// command state: {
 	//   "prog": {
 	//     "Name": "hello",
 	//     "Values": {
@@ -271,6 +244,42 @@ func ExampleParserConfig() {
 	//         "Name": "b",
 	//         "Values": null,
 	//         "Nodes": null
+	//       }
+	//     ]
+	//   }
+	// }
+	// flag state: {
+	//   "a": {
+	//     "Name": "a",
+	//     "Values": {
+	//       "0": "from",
+	//       "1": "the"
+	//     },
+	//     "Nodes": [
+	//       {},
+	//       {
+	//         "Literal": "from"
+	//       },
+	//       {},
+	//       {
+	//         "Literal": "the"
+	//       }
+	//     ]
+	//   },
+	//   "b": {
+	//     "Name": "b",
+	//     "Values": null,
+	//     "Nodes": null
+	//   },
+	//   "c": {
+	//     "Name": "c",
+	//     "Values": {
+	//       "feels": "hurlish"
+	//     },
+	//     "Nodes": [
+	//       {},
+	//       {
+	//         "Literal": "hurlish"
 	//       }
 	//     ]
 	//   }
