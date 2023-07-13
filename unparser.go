@@ -1,6 +1,7 @@
 package argh
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -16,14 +17,20 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) []string {
 		switch v := node.(type) {
 		case *ArgDelimiter:
 			continue
+		case *Assign:
+			buf = append(buf, string(cfg.AssignmentOperator))
+			continue
+		case *StdinFlag:
+			buf = append(buf, string(cfg.FlagPrefix))
+			continue
 		case *StopFlag:
 			buf = append(buf, string(cfg.FlagPrefix)+string(cfg.FlagPrefix))
 			continue
 		case *Ident:
 			buf = append(buf, v.Literal)
 			continue
-		case *Assign:
-			buf = append(buf, string(cfg.AssignmentOperator))
+		case *PassthroughArgs:
+			buf = append(buf, UnparseTree(v.Nodes, cfg)...)
 			continue
 		case *CompoundShortFlag:
 			if v.Nodes != nil {
@@ -42,6 +49,15 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) []string {
 				buf = append(buf, strings.Join(UnparseTree(v.Nodes, cfg), string(cfg.MultiValueDelim)))
 			}
 
+			continue
+		case *Command:
+			buf = append(buf, v.Name)
+
+			if len(v.Nodes) == 0 {
+				continue
+			}
+
+			buf = append(buf, UnparseTree(v.Nodes, cfg)...)
 			continue
 		case *Flag:
 			prefix := string(cfg.FlagPrefix)
@@ -71,15 +87,8 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) []string {
 			}
 
 			continue
-		case *Command:
-			buf = append(buf, v.Name)
-
-			if len(v.Nodes) == 0 {
-				continue
-			}
-
-			buf = append(buf, UnparseTree(v.Nodes, cfg)...)
-			continue
+		default:
+			panic(fmt.Errorf("unhandled node type %[1]T: %[2]w", v, Err))
 		}
 	}
 

@@ -2,6 +2,18 @@ package argh
 
 type Node interface{}
 
+type ArgDelimiter struct{}
+
+type Assign struct{}
+
+type StdinFlag struct{}
+
+type StopFlag struct{}
+
+type Ident struct {
+	Literal string
+}
+
 type PassthroughArgs struct {
 	Nodes []Node
 }
@@ -12,10 +24,6 @@ type CompoundShortFlag struct {
 
 type MultiIdent struct {
 	Nodes []Node
-}
-
-type Ident struct {
-	Literal string
 }
 
 // Command is a Node with a name, a slice of child Nodes, and
@@ -53,11 +61,3 @@ type FlagError struct {
 func (e FlagError) Error() string {
 	return e.Msg
 }
-
-type StdinFlag struct{}
-
-type StopFlag struct{}
-
-type ArgDelimiter struct{}
-
-type Assign struct{}

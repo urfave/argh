@@ -169,4 +169,33 @@ func TestUnparseTree(t *testing.T) {
 			),
 		)
 	})
+
+	t.Run("with passthrough args", func(t *testing.T) {
+		require.Equal(
+			t,
+			[]string{"shoelace", "--ok", "--", "tardigrade=smol", "--??", "-!"},
+			UnparseTree(
+				[]Node{
+					&Command{
+						Name: "shoelace",
+						Nodes: []Node{
+							&ArgDelimiter{},
+							&Flag{Name: "ok"},
+							&ArgDelimiter{},
+							&StopFlag{},
+							&ArgDelimiter{},
+							&PassthroughArgs{
+								Nodes: []Node{
+									&Ident{Literal: "tardigrade=smol"},
+									&Ident{Literal: "--??"},
+									&Ident{Literal: "-!"},
+								},
+							},
+						},
+					},
+				},
+				POSIXyScannerConfig,
+			),
+		)
+	})
 }
