@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"sort"
 )
 
 var (
@@ -35,22 +34,4 @@ func tracef(format string, v ...any) {
 	}
 
 	traceLogger.Printf(format, v...)
-}
-
-func stringMapToSlice[T any](m map[string]T) []T {
-	keys := []string{}
-
-	for key := range m {
-		keys = append(keys, key)
-	}
-
-	sort.Strings(keys)
-
-	sl := []T{}
-
-	for _, key := range keys {
-		sl = append(sl, m[key])
-	}
-
-	return sl
 }

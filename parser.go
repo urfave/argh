@@ -382,7 +382,7 @@ func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverrid
 			nodes = append(nodes, &Assign{})
 
 			continue
-		case IDENT, STDIN_FLAG:
+		case IDENT, STDIN_FLAG, MULTI_VALUE_DELIMITER:
 			name := fmt.Sprintf("%d", identIndex)
 
 			tracef("parseConfiguredFlag(...) checking for name of identIndex=%d", identIndex)
@@ -397,15 +397,40 @@ func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverrid
 				tracef("parseConfiguredFlag(...) setting name=%s", name)
 			}
 
-			values[name] = p.lit
-
-			if p.tok == STDIN_FLAG {
-				nodes = append(nodes, &StdinFlag{})
-			} else {
-				nodes = append(nodes, &Ident{Literal: p.lit})
+			if p.tok != MULTI_VALUE_DELIMITER {
+				values[name] = p.lit
 			}
 
-			identIndex++
+			addNode := func(node Node) {
+				if len(nodes) > 0 {
+					if v, ok := nodes[len(nodes)-1].(*MultiIdent); ok {
+						v.Nodes = append(v.Nodes, node)
+						return
+					}
+				}
+
+				nodes = append(nodes, node)
+			}
+
+			if p.tok == STDIN_FLAG {
+				addNode(&StdinFlag{})
+			} else if p.tok == MULTI_VALUE_DELIMITER {
+				if len(nodes) > 0 {
+					if v, ok := nodes[len(nodes)-1].(*Ident); ok {
+						nodes[len(nodes)-1] = &MultiIdent{Nodes: []Node{v}}
+					} else if v, ok := nodes[len(nodes)-1].(*StdinFlag); ok {
+						nodes[len(nodes)-1] = &MultiIdent{Nodes: []Node{v}}
+					}
+				} else {
+					nodes = append(nodes, &MultiIdent{Nodes: []Node{}})
+				}
+			} else {
+				addNode(&Ident{Literal: p.lit})
+			}
+
+			if p.tok != MULTI_VALUE_DELIMITER {
+				identIndex++
+			}
 		default:
 			tracef("parseConfiguredFlag(...) breaking on %s %q %v; setting buffered=true", p.tok, p.lit, p.pos)
 			p.buffered = true

@@ -2,11 +2,6 @@ package argh
 
 type Node interface{}
 
-type TypedNode struct {
-	Type string
-	Node Node
-}
-
 type PassthroughArgs struct {
 	Nodes []Node
 }
@@ -21,12 +16,6 @@ type MultiIdent struct {
 
 type Ident struct {
 	Literal string
-}
-
-type BadArg struct {
-	Literal string
-	From    Pos
-	To      Pos
 }
 
 // Command is a Node with a name, a slice of child Nodes, and

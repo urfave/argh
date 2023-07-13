@@ -279,6 +279,114 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
+			name: "multi-value flags",
+			args: []string{"fjords", "--with=whales,majesticness,waters", "-a", "sparkling,lens flares", "probably ducks"},
+			cfg: &argh.ParserConfig{
+				Prog: &argh.CommandConfig{
+					Flags: &argh.Flags{
+						Map: map[string]argh.FlagConfig{
+							"with": {
+								NValue: argh.OneOrMoreValue,
+								On:     traceOnFlag,
+							},
+							"a": {
+								NValue: argh.OneOrMoreValue,
+								On:     traceOnFlag,
+							},
+						},
+					},
+				},
+			},
+			expPT: []argh.Node{
+				&argh.Command{
+					Name: "fjords",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.Flag{
+							Name: "with",
+							Values: map[string]string{
+								"0": "whales",
+								"1": "majesticness",
+								"2": "waters",
+							},
+							Nodes: []argh.Node{
+								&argh.Assign{},
+								&argh.MultiIdent{
+									Nodes: []argh.Node{
+										&argh.Ident{Literal: "whales"},
+										&argh.Ident{Literal: "majesticness"},
+										&argh.Ident{Literal: "waters"},
+									},
+								},
+								&argh.ArgDelimiter{},
+							},
+						},
+						&argh.Flag{
+							Name: "a",
+							Values: map[string]string{
+								"0": "sparkling",
+								"1": "lens flares",
+								"2": "probably ducks",
+							},
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+								&argh.MultiIdent{
+									Nodes: []argh.Node{
+										&argh.Ident{Literal: "sparkling"},
+										&argh.Ident{Literal: "lens flares"},
+									},
+								},
+								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "probably ducks"},
+							},
+						},
+					},
+				},
+			},
+			expAST: []argh.Node{
+				&argh.Command{
+					Name: "fjords",
+					Nodes: []argh.Node{
+						&argh.Flag{
+							Name: "with",
+							Values: map[string]string{
+								"0": "whales",
+								"1": "majesticness",
+								"2": "waters",
+							},
+							Nodes: []argh.Node{
+								&argh.Assign{},
+								&argh.MultiIdent{
+									Nodes: []argh.Node{
+										&argh.Ident{Literal: "whales"},
+										&argh.Ident{Literal: "majesticness"},
+										&argh.Ident{Literal: "waters"},
+									},
+								},
+							},
+						},
+						&argh.Flag{
+							Name: "a",
+							Values: map[string]string{
+								"0": "sparkling",
+								"1": "lens flares",
+								"2": "probably ducks",
+							},
+							Nodes: []argh.Node{
+								&argh.MultiIdent{
+									Nodes: []argh.Node{
+										&argh.Ident{Literal: "sparkling"},
+										&argh.Ident{Literal: "lens flares"},
+									},
+								},
+								&argh.Ident{Literal: "probably ducks"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "long value-less flags",
 			args: []string{"pizzas", "--tasty", "--fresh", "--super-hot-right-now"},
 			cfg: &argh.ParserConfig{
