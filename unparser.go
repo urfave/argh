@@ -8,7 +8,7 @@ import (
 // UnparseTree accepts a Node slice which is assumed to be a parse tree
 // such as that returned from ParseArgs and a ScannerConfig,
 // returning a string slice representation of the un-parsed input.
-func UnparseTree(nodes []Node, cfg *ScannerConfig) []string {
+func UnparseTree(nodes []Node, cfg *ScannerConfig) ([]string, error) {
 	buf := []string{}
 
 	for i, node := range nodes {
@@ -30,13 +30,23 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) []string {
 			buf = append(buf, v.Literal)
 			continue
 		case *PassthroughArgs:
-			buf = append(buf, UnparseTree(v.Nodes, cfg)...)
+			sv, err := UnparseTree(v.Nodes, cfg)
+			if err != nil {
+				return buf, err
+			}
+
+			buf = append(buf, sv...)
 			continue
 		case *CompoundShortFlag:
 			if v.Nodes != nil {
 				flagStrings := []string{}
 
-				for _, flagString := range UnparseTree(v.Nodes, cfg) {
+				sv, err := UnparseTree(v.Nodes, cfg)
+				if err != nil {
+					return buf, err
+				}
+
+				for _, flagString := range sv {
 					flagStrings = append(flagStrings, strings.TrimPrefix(flagString, string(cfg.FlagPrefix)))
 				}
 
@@ -46,7 +56,12 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) []string {
 			continue
 		case *MultiIdent:
 			if v.Nodes != nil {
-				buf = append(buf, strings.Join(UnparseTree(v.Nodes, cfg), string(cfg.MultiValueDelim)))
+				sv, err := UnparseTree(v.Nodes, cfg)
+				if err != nil {
+					return buf, err
+				}
+
+				buf = append(buf, strings.Join(sv, string(cfg.MultiValueDelim)))
 			}
 
 			continue
@@ -57,7 +72,12 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) []string {
 				continue
 			}
 
-			buf = append(buf, UnparseTree(v.Nodes, cfg)...)
+			sv, err := UnparseTree(v.Nodes, cfg)
+			if err != nil {
+				return buf, err
+			}
+
+			buf = append(buf, sv...)
 			continue
 		case *Flag:
 			prefix := string(cfg.FlagPrefix)
@@ -68,10 +88,16 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) []string {
 			flStr := prefix + v.Name
 
 			if len(v.Nodes) > 0 {
-				nodeStrings := UnparseTree(v.Nodes, cfg)
+				nodeStrings, err := UnparseTree(v.Nodes, cfg)
+				if err != nil {
+					return buf, err
+				}
+
 				tail := []string{}
 
-				if _, ok := v.Nodes[0].(*Assign); ok {
+				switch v.Nodes[0].(type) {
+				case *Assign, *Ident, *MultiIdent, *StdinFlag:
+
 					flStr += nodeStrings[0]
 					tail = nodeStrings[1:]
 
@@ -88,9 +114,9 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) []string {
 
 			continue
 		default:
-			panic(fmt.Errorf("unhandled node type %[1]T: %[2]w", v, Err))
+			return buf, fmt.Errorf("unhandled node type %[1]T: %[2]w", v, Err)
 		}
 	}
 
-	return buf
+	return buf, nil
 }
