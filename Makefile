@@ -1,5 +1,8 @@
 BENCHTIME ?= 10s
 STRINGER := .local/bin/stringer
+URFAVE_ARGH_TRACING ?= off
+
+export URFAVE_ARGH_TRACING
 
 .PHONY: all
 all: generate test
