@@ -305,21 +305,9 @@ func TestUnparseTree(t *testing.T) {
 						&ArgDelimiter{},
 						&StopFlag{},
 						&ArgDelimiter{},
-						&CompoundShortFlag{
+						&PassthroughArgs{
 							Nodes: []Node{
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
-								&Flag{Name: "v"},
+								&Ident{Literal: "-vvvvvvvvvvvvv"},
 							},
 						},
 					},
