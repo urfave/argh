@@ -327,4 +327,132 @@ func TestUnparseTree(t *testing.T) {
 			sv,
 		)
 	})
+
+	t.Run("multi-value flags multiple times", func(t *testing.T) {
+		r := require.New(t)
+
+		sv, err := UnparseTree(
+			[]Node{
+				&Command{
+					Name: "multi_values",
+					Nodes: []Node{
+						&ArgDelimiter{},
+						&Flag{
+							Name: "stringSlice",
+							Values: map[string]string{
+								"0": "parsed1",
+								"1": "parsed2",
+							},
+							Nodes: []Node{
+								&ArgDelimiter{},
+								&MultiIdent{
+									Nodes: []Node{
+										&Ident{Literal: "parsed1"},
+										&Ident{Literal: "parsed2"},
+									},
+								},
+								&ArgDelimiter{},
+							},
+						},
+						&Flag{
+							Name: "stringSlice",
+							Values: map[string]string{
+								"0": "parsed3",
+								"1": "parsed4",
+							},
+							Nodes: []Node{
+								&ArgDelimiter{},
+								&MultiIdent{
+									Nodes: []Node{
+										&Ident{Literal: "parsed3"},
+										&Ident{Literal: "parsed4"},
+									},
+								},
+								&ArgDelimiter{},
+							},
+						},
+						&Flag{
+							Name: "float64Slice",
+							Values: map[string]string{
+								"0": "13.3",
+								"1": "14.4",
+							},
+							Nodes: []Node{
+								&ArgDelimiter{},
+								&MultiIdent{
+									Nodes: []Node{
+										&Ident{Literal: "13.3"},
+										&Ident{Literal: "14.4"},
+									},
+								},
+								&ArgDelimiter{},
+							},
+						},
+						&Flag{
+							Name: "float64Slice",
+							Values: map[string]string{
+								"0": "15.5",
+								"1": "16.6",
+							},
+							Nodes: []Node{
+								&ArgDelimiter{},
+								&MultiIdent{
+									Nodes: []Node{
+										&Ident{Literal: "15.5"},
+										&Ident{Literal: "16.6"},
+									},
+								},
+								&ArgDelimiter{},
+							},
+						},
+						&Flag{
+							Name: "intSlice",
+							Values: map[string]string{
+								"0": "13",
+								"1": "14",
+							},
+							Nodes: []Node{
+								&ArgDelimiter{},
+								&MultiIdent{
+									Nodes: []Node{
+										&Ident{Literal: "13"},
+										&Ident{Literal: "14"},
+									},
+								},
+								&ArgDelimiter{},
+							},
+						},
+						&Flag{
+							Name: "intSlice",
+							Values: map[string]string{
+								"0": "15",
+								"1": "16",
+							},
+							Nodes: []Node{
+								&ArgDelimiter{},
+								&MultiIdent{
+									Nodes: []Node{
+										&Ident{Literal: "15"},
+										&Ident{Literal: "16"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			POSIXyScannerConfig,
+		)
+
+		r.NoError(err)
+		r.Equal(
+			[]string{
+				"multi_values",
+				"--stringSlice", "parsed1,parsed2", "--stringSlice", "parsed3,parsed4",
+				"--float64Slice", "13.3,14.4", "--float64Slice", "15.5,16.6",
+				"--intSlice", "13,14", "--intSlice", "15,16",
+			},
+			sv,
+		)
+	})
 }

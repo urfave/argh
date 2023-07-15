@@ -87,28 +87,20 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) ([]string, error) {
 
 			flStr := prefix + v.Name
 
+			tracef("flag string=%[1]q", flStr)
+
 			if len(v.Nodes) > 0 {
-				nodeStrings, err := UnparseTree(v.Nodes, cfg)
+				flStr, tail, err := unParseFlagNodes(flStr, v.Nodes, cfg)
 				if err != nil {
 					return buf, err
 				}
 
-				tail := []string{}
-
-				switch v.Nodes[0].(type) {
-				case *Assign, *Ident, *MultiIdent, *StdinFlag:
-
-					flStr += nodeStrings[0]
-					tail = nodeStrings[1:]
-
-					if len(nodeStrings) > 1 {
-						flStr += nodeStrings[1]
-						tail = nodeStrings[2:]
-					}
-				}
+				tracef("appending %[1]q with tail=%[2]q", flStr, tail)
 
 				buf = append(append(buf, flStr), tail...)
 			} else {
+				tracef("appending %[1]q", flStr)
+
 				buf = append(buf, flStr)
 			}
 
@@ -119,4 +111,43 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) ([]string, error) {
 	}
 
 	return buf, nil
+}
+
+func unParseFlagNodes(flStr string, nodes []Node, cfg *ScannerConfig) (string, []string, error) {
+	if len(nodes) == 0 {
+		return flStr, []string{}, nil
+	}
+
+	if _, ok := nodes[0].(*ArgDelimiter); ok {
+		tail, err := UnparseTree(nodes[1:], cfg)
+
+		tracef("explicit arg delimiter present; returning flag str=%[1]q tail=%[2]q", flStr, tail)
+
+		return flStr, tail, err
+	}
+
+	tail, err := UnparseTree(nodes, cfg)
+	if err != nil {
+		return flStr, tail, err
+	}
+
+	if _, ok := nodes[0].(*Assign); ok && len(nodes) > 1 {
+		flStr = flStr + tail[0] + tail[1]
+		tail = tail[2:]
+
+		tracef("assign operator present with adjacent nodes; returning flag str=%[1]q tail=%[2]q", flStr, tail)
+
+		return flStr, tail, nil
+	} else if len(flStr) == 2 {
+		flStr = flStr + tail[0]
+		tail = tail[1:]
+
+		tracef("short flag detected; returning flag str=%[1]q tail=%[2]q", flStr, tail)
+
+		return flStr, tail, nil
+	}
+
+	tracef("no special cases; returning flag str=%[1]q tail=%[2]q", flStr, tail)
+
+	return flStr, tail, nil
 }
