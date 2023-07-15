@@ -11,6 +11,7 @@ func ToAST(parseTree []Node) []Node {
 
 		switch v := node.(type) {
 		case *ArgDelimiter:
+			continue
 		case *StopFlag:
 			continue
 		case *Assign:
