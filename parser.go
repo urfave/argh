@@ -98,7 +98,7 @@ func (p *parser) parseCommand(cCfg *CommandConfig) (Node, error) {
 	node := &Command{
 		Name: p.lit,
 	}
-	values := map[string]string{}
+	values := []KeyValue{}
 	nodes := []Node{}
 
 	identIndex := 0
@@ -154,7 +154,7 @@ func (p *parser) parseCommand(cCfg *CommandConfig) (Node, error) {
 					tracef("parseCommand(...) setting name=%s from repeating value name", name)
 				}
 
-				values[name] = p.lit
+				values = append(values, KeyValue{Key: name, Value: p.lit})
 			}
 
 			if p.tok == STDIN_FLAG {
@@ -334,7 +334,7 @@ func (p *parser) parseCompoundShortFlag(flags *Flags) (Node, error) {
 }
 
 func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverride *NValue) (Node, error) {
-	values := map[string]string{}
+	values := []KeyValue{}
 	nodes := []Node{}
 
 	atExit := func() (*Flag, error) {
@@ -379,6 +379,19 @@ func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverrid
 
 			continue
 		case ASSIGN:
+			if len(nodes) > 0 {
+				tracef("checking for key-value assignment")
+
+				prev := nodes[len(nodes)-1]
+				if v, ok := prev.(*Ident); ok {
+					tracef("setting previous node as *KeyValue with *Ident literal=%[1]q as key", v.Literal)
+
+					nodes[len(nodes)-1] = &KeyValue{Key: v.Literal}
+
+					continue
+				}
+			}
+
 			nodes = append(nodes, &Assign{})
 
 			continue
@@ -398,13 +411,27 @@ func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverrid
 			}
 
 			if p.tok != MULTI_VALUE_DELIMITER {
-				values[name] = p.lit
+				values = append(values, KeyValue{Key: name, Value: p.lit})
 			}
 
 			addNode := func(node Node) {
+				identNode, identNodeOk := node.(*Ident)
+
 				if len(nodes) > 0 {
-					if v, ok := nodes[len(nodes)-1].(*MultiIdent); ok {
+					prev := nodes[len(nodes)-1]
+
+					if v, ok := prev.(*MultiIdent); ok {
+						tracef("appending node to previous nodes")
+
 						v.Nodes = append(v.Nodes, node)
+
+						return
+					} else if v, ok := prev.(*KeyValue); ok && identNodeOk {
+						tracef("setting node literal as previous node value")
+
+						v.Value = identNode.Literal
+						values = append(values, *v)
+
 						return
 					}
 				}
@@ -416,15 +443,25 @@ func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverrid
 				addNode(&StdinFlag{})
 			} else if p.tok == MULTI_VALUE_DELIMITER {
 				if len(nodes) > 0 {
-					if v, ok := nodes[len(nodes)-1].(*Ident); ok {
+					prev := nodes[len(nodes)-1]
+
+					if v, ok := prev.(*Ident); ok {
+						tracef("setting previous node as *MultiIdent with *Ident node as first child")
+
 						nodes[len(nodes)-1] = &MultiIdent{Nodes: []Node{v}}
-					} else if v, ok := nodes[len(nodes)-1].(*StdinFlag); ok {
+					} else if v, ok := prev.(*StdinFlag); ok {
+						tracef("setting previous node as *MultiIdent with *StdinFlag node as first child")
+
 						nodes[len(nodes)-1] = &MultiIdent{Nodes: []Node{v}}
 					}
 				} else {
+					tracef("appending *MultiIdent with empty child nodes")
+
 					nodes = append(nodes, &MultiIdent{Nodes: []Node{}})
 				}
 			} else {
+				tracef("appending *Ident")
+
 				addNode(&Ident{Literal: p.lit})
 			}
 

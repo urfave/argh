@@ -72,8 +72,8 @@ func TestParser(t *testing.T) {
 						&argh.ArgDelimiter{},
 						&argh.Command{
 							Name: "hello",
-							Values: map[string]string{
-								"name": "mario",
+							Values: []argh.KeyValue{
+								{Key: "name", Value: "mario"},
 							},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
@@ -93,8 +93,8 @@ func TestParser(t *testing.T) {
 						&argh.Flag{Name: "wat"},
 						&argh.Command{
 							Name: "hello",
-							Values: map[string]string{
-								"name": "mario",
+							Values: []argh.KeyValue{
+								{Key: "name", Value: "mario"},
 							},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "mario"},
@@ -149,8 +149,8 @@ func TestParser(t *testing.T) {
 						&argh.ArgDelimiter{},
 						&argh.Command{
 							Name: "hello",
-							Values: map[string]string{
-								"name": "mario",
+							Values: []argh.KeyValue{
+								{Key: "name", Value: "mario"},
 							},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
@@ -175,8 +175,8 @@ func TestParser(t *testing.T) {
 						&argh.Flag{Name: "wat"},
 						&argh.Command{
 							Name: "hello",
-							Values: map[string]string{
-								"name": "mario",
+							Values: []argh.KeyValue{
+								{Key: "name", Value: "mario"},
 							},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "mario"},
@@ -212,7 +212,7 @@ func TestParser(t *testing.T) {
 			expPT: []argh.Node{
 				&argh.Command{
 					Name:   "pizzas",
-					Values: map[string]string{"0": "excel"},
+					Values: []argh.KeyValue{{Key: "0", Value: "excel"}},
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
 						&argh.Ident{Literal: "excel"},
@@ -222,7 +222,7 @@ func TestParser(t *testing.T) {
 			expAST: []argh.Node{
 				&argh.Command{
 					Name:   "pizzas",
-					Values: map[string]string{"0": "excel"},
+					Values: []argh.KeyValue{{Key: "0", Value: "excel"}},
 					Nodes: []argh.Node{
 						&argh.Ident{Literal: "excel"},
 					},
@@ -242,11 +242,11 @@ func TestParser(t *testing.T) {
 			expPT: []argh.Node{
 				&argh.Command{
 					Name: "pizzas",
-					Values: map[string]string{
-						"word":   "excel",
-						"word.1": "wildly",
-						"word.2": "when",
-						"word.3": "feral",
+					Values: []argh.KeyValue{
+						{Key: "word", Value: "excel"},
+						{Key: "word", Value: "wildly"},
+						{Key: "word", Value: "when"},
+						{Key: "word", Value: "feral"},
 					},
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
@@ -263,11 +263,11 @@ func TestParser(t *testing.T) {
 			expAST: []argh.Node{
 				&argh.Command{
 					Name: "pizzas",
-					Values: map[string]string{
-						"word":   "excel",
-						"word.1": "wildly",
-						"word.2": "when",
-						"word.3": "feral",
+					Values: []argh.KeyValue{
+						{Key: "word", Value: "excel"},
+						{Key: "word", Value: "wildly"},
+						{Key: "word", Value: "when"},
+						{Key: "word", Value: "feral"},
 					},
 					Nodes: []argh.Node{
 						&argh.Ident{Literal: "excel"},
@@ -304,10 +304,10 @@ func TestParser(t *testing.T) {
 						&argh.ArgDelimiter{},
 						&argh.Flag{
 							Name: "with",
-							Values: map[string]string{
-								"0": "whales",
-								"1": "majesticness",
-								"2": "waters",
+							Values: []argh.KeyValue{
+								{Key: "0", Value: "whales"},
+								{Key: "1", Value: "majesticness"},
+								{Key: "2", Value: "waters"},
 							},
 							Nodes: []argh.Node{
 								&argh.Assign{},
@@ -323,10 +323,10 @@ func TestParser(t *testing.T) {
 						},
 						&argh.Flag{
 							Name: "a",
-							Values: map[string]string{
-								"0": "sparkling",
-								"1": "lens flares",
-								"2": "probably ducks",
+							Values: []argh.KeyValue{
+								{Key: "0", Value: "sparkling"},
+								{Key: "1", Value: "lens flares"},
+								{Key: "2", Value: "probably ducks"},
 							},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
@@ -349,10 +349,10 @@ func TestParser(t *testing.T) {
 					Nodes: []argh.Node{
 						&argh.Flag{
 							Name: "with",
-							Values: map[string]string{
-								"0": "whales",
-								"1": "majesticness",
-								"2": "waters",
+							Values: []argh.KeyValue{
+								{Key: "0", Value: "whales"},
+								{Key: "1", Value: "majesticness"},
+								{Key: "2", Value: "waters"},
 							},
 							Nodes: []argh.Node{
 								&argh.Assign{},
@@ -367,10 +367,10 @@ func TestParser(t *testing.T) {
 						},
 						&argh.Flag{
 							Name: "a",
-							Values: map[string]string{
-								"0": "sparkling",
-								"1": "lens flares",
-								"2": "probably ducks",
+							Values: []argh.KeyValue{
+								{Key: "0", Value: "sparkling"},
+								{Key: "1", Value: "lens flares"},
+								{Key: "2", Value: "probably ducks"},
 							},
 							Nodes: []argh.Node{
 								&argh.MultiIdent{
@@ -459,7 +459,7 @@ func TestParser(t *testing.T) {
 						&argh.ArgDelimiter{},
 						&argh.Flag{
 							Name:   "fresh",
-							Values: map[string]string{"0": "soon"},
+							Values: []argh.KeyValue{{Key: "0", Value: "soon"}},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
 								&argh.Ident{Literal: "soon"},
@@ -469,8 +469,12 @@ func TestParser(t *testing.T) {
 						&argh.Flag{Name: "super-hot-right-now"},
 						&argh.ArgDelimiter{},
 						&argh.Flag{
-							Name:   "box",
-							Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"},
+							Name: "box",
+							Values: []argh.KeyValue{
+								{Key: "0", Value: "square"},
+								{Key: "1", Value: "shaped"},
+								{Key: "2", Value: "hot"},
+							},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
 								&argh.Ident{Literal: "square"},
@@ -492,15 +496,19 @@ func TestParser(t *testing.T) {
 						&argh.Flag{Name: "tasty"},
 						&argh.Flag{
 							Name:   "fresh",
-							Values: map[string]string{"0": "soon"},
+							Values: []argh.KeyValue{{Key: "0", Value: "soon"}},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "soon"},
 							},
 						},
 						&argh.Flag{Name: "super-hot-right-now"},
 						&argh.Flag{
-							Name:   "box",
-							Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"},
+							Name: "box",
+							Values: []argh.KeyValue{
+								{Key: "0", Value: "square"},
+								{Key: "1", Value: "shaped"},
+								{Key: "2", Value: "hot"},
+							},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "square"},
 								&argh.Ident{Literal: "shaped"},
@@ -636,7 +644,7 @@ func TestParser(t *testing.T) {
 						&argh.ArgDelimiter{},
 						&argh.Flag{
 							Name:   "b",
-							Values: map[string]string{"0": "1312"},
+							Values: []argh.KeyValue{{Key: "0", Value: "1312"}},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
 								&argh.Ident{Literal: "1312"},
@@ -661,7 +669,7 @@ func TestParser(t *testing.T) {
 						&argh.Flag{Name: "ca"},
 						&argh.Flag{
 							Name:   "b",
-							Values: map[string]string{"0": "1312"},
+							Values: []argh.KeyValue{{Key: "0", Value: "1312"}},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "1312"},
 							},
@@ -788,10 +796,10 @@ func TestParser(t *testing.T) {
 								&argh.Flag{Name: "e"},
 								&argh.Flag{
 									Name: "d",
-									Values: map[string]string{
-										"0": "sauce",
-										"1": "heat",
-										"2": "love",
+									Values: []argh.KeyValue{
+										{Key: "0", Value: "sauce"},
+										{Key: "1", Value: "heat"},
+										{Key: "2", Value: "love"},
 									},
 									Nodes: []argh.Node{
 										&argh.ArgDelimiter{},
@@ -812,8 +820,8 @@ func TestParser(t *testing.T) {
 								&argh.Flag{Name: "s"},
 								&argh.Flag{
 									Name: "o",
-									Values: map[string]string{
-										"level": "over9000",
+									Values: []argh.KeyValue{
+										{Key: "level", Value: "over9000"},
 									},
 									Nodes: []argh.Node{
 										&argh.ArgDelimiter{},
@@ -834,10 +842,10 @@ func TestParser(t *testing.T) {
 						&argh.Flag{Name: "e"},
 						&argh.Flag{
 							Name: "d",
-							Values: map[string]string{
-								"0": "sauce",
-								"1": "heat",
-								"2": "love",
+							Values: []argh.KeyValue{
+								{Key: "0", Value: "sauce"},
+								{Key: "1", Value: "heat"},
+								{Key: "2", Value: "love"},
 							},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "sauce"},
@@ -850,8 +858,8 @@ func TestParser(t *testing.T) {
 						&argh.Flag{Name: "s"},
 						&argh.Flag{
 							Name: "o",
-							Values: map[string]string{
-								"level": "over9000",
+							Values: []argh.KeyValue{
+								{Key: "level", Value: "over9000"},
 							},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "over9000"},
@@ -918,7 +926,7 @@ func TestParser(t *testing.T) {
 												&argh.Flag{Name: "A"},
 												&argh.Flag{
 													Name:   "t",
-													Values: map[string]string{"0": "hugs"},
+													Values: []argh.KeyValue{{Key: "0", Value: "hugs"}},
 													Nodes: []argh.Node{
 														&argh.ArgDelimiter{},
 														&argh.Ident{Literal: "hugs"},
@@ -949,11 +957,63 @@ func TestParser(t *testing.T) {
 										&argh.Flag{Name: "A"},
 										&argh.Flag{
 											Name:   "t",
-											Values: map[string]string{"0": "hugs"},
+											Values: []argh.KeyValue{{Key: "0", Value: "hugs"}},
 											Nodes: []argh.Node{
 												&argh.Ident{Literal: "hugs"},
 											},
 										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "key-value flag values",
+			args: []string{"noodles", "-t", "paste=chili", "-t", "seeds=sesame,cilantro"},
+			cfg: &argh.ParserConfig{
+				Prog: &argh.CommandConfig{
+					Commands: &argh.Commands{},
+					Flags: &argh.Flags{
+						Map: map[string]argh.FlagConfig{
+							"t": {
+								NValue: argh.OneOrMoreValue,
+								On:     traceOnFlag,
+							},
+						},
+					},
+				},
+			},
+			expPT: []argh.Node{
+				&argh.Command{
+					Name: "noodles",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.Flag{
+							Name: "t",
+							Values: []argh.KeyValue{
+								{Key: "paste", Value: "chili"},
+							},
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+								&argh.KeyValue{Key: "paste", Value: "chili"},
+								&argh.ArgDelimiter{},
+							},
+						},
+						&argh.Flag{
+							Name: "t",
+							Values: []argh.KeyValue{
+								{Key: "seeds", Value: "sesame"},
+								{Key: "cilantro", Value: ""},
+							},
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+								&argh.MultiIdent{
+									Nodes: []argh.Node{
+										&argh.KeyValue{Key: "seeds", Value: "sesame"},
+										&argh.KeyValue{Key: "cilantro"},
 									},
 								},
 							},
@@ -1006,7 +1066,7 @@ func TestParser(t *testing.T) {
 								&argh.Flag{Name: "A"},
 								&argh.Flag{
 									Name:   "T",
-									Values: map[string]string{"0": "golf"},
+									Values: []argh.KeyValue{{Key: "0", Value: "golf"}},
 									Nodes: []argh.Node{
 										&argh.Assign{},
 										&argh.Ident{Literal: "golf"},
@@ -1019,14 +1079,14 @@ func TestParser(t *testing.T) {
 						&argh.ArgDelimiter{},
 						&argh.Command{
 							Name:   "goose",
-							Values: map[string]string{"0": "bonk"},
+							Values: []argh.KeyValue{{Key: "0", Value: "bonk"}},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
 								&argh.Ident{Literal: "bonk"},
 								&argh.ArgDelimiter{},
 								&argh.Flag{
 									Name:   "FIERCENESS",
-									Values: map[string]string{"0": "-2"},
+									Values: []argh.KeyValue{{Key: "0", Value: "-2"}},
 									Nodes: []argh.Node{
 										&argh.Assign{},
 										&argh.Ident{Literal: "-2"},
@@ -1074,7 +1134,7 @@ func TestParser(t *testing.T) {
 						&argh.ArgDelimiter{},
 						&argh.Flag{
 							Name:   "o",
-							Values: map[string]string{"0": "ppy"},
+							Values: []argh.KeyValue{{Key: "0", Value: "ppy"}},
 							Nodes: []argh.Node{
 								&argh.Assign{},
 								&argh.Ident{Literal: "ppy"},

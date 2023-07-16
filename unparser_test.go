@@ -43,9 +43,9 @@ func TestUnparseTree(t *testing.T) {
 						&Flag{Name: "o"},
 						&Flag{
 							Name: "f",
-							Values: map[string]string{
-								"0": "yep",
-								"1": "maybe",
+							Values: []KeyValue{
+								{Key: "0", Value: "yep"},
+								{Key: "1", Value: "maybe"},
 							},
 							Nodes: []Node{
 								&Assign{},
@@ -61,8 +61,10 @@ func TestUnparseTree(t *testing.T) {
 				},
 				&ArgDelimiter{},
 				&Flag{
-					Name:   "sandwiches",
-					Values: map[string]string{"0": "42"},
+					Name: "sandwiches",
+					Values: []KeyValue{
+						{Key: "0", Value: "42"},
+					},
 					Nodes: []Node{
 						&Assign{},
 						&Ident{Literal: "42"},
@@ -103,8 +105,8 @@ func TestUnparseTree(t *testing.T) {
 						&ArgDelimiter{},
 						&Command{
 							Name: "hello",
-							Values: map[string]string{
-								"name": "mario",
+							Values: []KeyValue{
+								{Key: "name", Value: "mario"},
 							},
 							Nodes: []Node{
 								&ArgDelimiter{},
@@ -143,8 +145,8 @@ func TestUnparseTree(t *testing.T) {
 								&Flag{Name: "n"},
 								&Flag{
 									Name: "d",
-									Values: map[string]string{
-										"0": "o",
+									Values: []KeyValue{
+										{Key: "0", Value: "o"},
 									},
 									Nodes: []Node{
 										&Assign{},
@@ -174,10 +176,10 @@ func TestUnparseTree(t *testing.T) {
 						&ArgDelimiter{},
 						&Flag{
 							Name: "with",
-							Values: map[string]string{
-								"0": "whales",
-								"1": "majesticness",
-								"2": "waters",
+							Values: []KeyValue{
+								{Key: "0", Value: "whales"},
+								{Key: "1", Value: "majesticness"},
+								{Key: "2", Value: "waters"},
 							},
 							Nodes: []Node{
 								&Assign{},
@@ -193,10 +195,10 @@ func TestUnparseTree(t *testing.T) {
 						&ArgDelimiter{},
 						&Flag{
 							Name: "a",
-							Values: map[string]string{
-								"0": "sparkling",
-								"1": "lens flares",
-								"2": "probably ducks",
+							Values: []KeyValue{
+								{Key: "0", Value: "sparkling"},
+								{Key: "1", Value: "lens flares"},
+								{Key: "2", Value: "probably ducks"},
 							},
 							Nodes: []Node{
 								&Assign{},
@@ -282,8 +284,8 @@ func TestUnparseTree(t *testing.T) {
 						&ArgDelimiter{},
 						&Flag{
 							Name: "connect-timeout",
-							Values: map[string]string{
-								"0": "5",
+							Values: []KeyValue{
+								{Key: "0", Value: "5"},
 							},
 							Nodes: []Node{
 								&Assign{},
@@ -295,8 +297,8 @@ func TestUnparseTree(t *testing.T) {
 						&ArgDelimiter{},
 						&Flag{
 							Name: "o",
-							Values: map[string]string{
-								"0": "-",
+							Values: []KeyValue{
+								{Key: "0", Value: "-"},
 							},
 							Nodes: []Node{
 								&StdinFlag{},
@@ -339,9 +341,9 @@ func TestUnparseTree(t *testing.T) {
 						&ArgDelimiter{},
 						&Flag{
 							Name: "stringSlice",
-							Values: map[string]string{
-								"0": "parsed1",
-								"1": "parsed2",
+							Values: []KeyValue{
+								{Key: "0", Value: "parsed1"},
+								{Key: "1", Value: "parsed2"},
 							},
 							Nodes: []Node{
 								&ArgDelimiter{},
@@ -356,9 +358,9 @@ func TestUnparseTree(t *testing.T) {
 						},
 						&Flag{
 							Name: "stringSlice",
-							Values: map[string]string{
-								"0": "parsed3",
-								"1": "parsed4",
+							Values: []KeyValue{
+								{Key: "0", Value: "parsed3"},
+								{Key: "1", Value: "parsed4"},
 							},
 							Nodes: []Node{
 								&ArgDelimiter{},
@@ -373,9 +375,9 @@ func TestUnparseTree(t *testing.T) {
 						},
 						&Flag{
 							Name: "float64Slice",
-							Values: map[string]string{
-								"0": "13.3",
-								"1": "14.4",
+							Values: []KeyValue{
+								{Key: "0", Value: "13.3"},
+								{Key: "1", Value: "14.4"},
 							},
 							Nodes: []Node{
 								&ArgDelimiter{},
@@ -390,9 +392,9 @@ func TestUnparseTree(t *testing.T) {
 						},
 						&Flag{
 							Name: "float64Slice",
-							Values: map[string]string{
-								"0": "15.5",
-								"1": "16.6",
+							Values: []KeyValue{
+								{Key: "0", Value: "15.5"},
+								{Key: "1", Value: "16.6"},
 							},
 							Nodes: []Node{
 								&ArgDelimiter{},
@@ -407,9 +409,9 @@ func TestUnparseTree(t *testing.T) {
 						},
 						&Flag{
 							Name: "intSlice",
-							Values: map[string]string{
-								"0": "13",
-								"1": "14",
+							Values: []KeyValue{
+								{Key: "0", Value: "13"},
+								{Key: "1", Value: "14"},
 							},
 							Nodes: []Node{
 								&ArgDelimiter{},
@@ -424,9 +426,9 @@ func TestUnparseTree(t *testing.T) {
 						},
 						&Flag{
 							Name: "intSlice",
-							Values: map[string]string{
-								"0": "15",
-								"1": "16",
+							Values: []KeyValue{
+								{Key: "0", Value: "15"},
+								{Key: "1", Value: "16"},
 							},
 							Nodes: []Node{
 								&ArgDelimiter{},

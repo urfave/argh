@@ -26,19 +26,24 @@ type MultiIdent struct {
 	Nodes []Node
 }
 
+type KeyValue struct {
+	Key   string
+	Value string
+}
+
 // Command is a Node with a name, a slice of child Nodes, and
-// potentially a map of named values derived from the child Nodes
+// potentially a slice of named values derived from the child Nodes
 type Command struct {
 	Name   string
-	Values map[string]string
+	Values []KeyValue
 	Nodes  []Node
 }
 
 // Flag is a Node with a name, a slice of child Nodes, and
-// potentially a map of named values derived from the child Nodes
+// potentially a slice of named values derived from the child Nodes
 type Flag struct {
 	Name   string
-	Values map[string]string
+	Values []KeyValue
 	Nodes  []Node
 }
 

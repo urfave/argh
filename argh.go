@@ -41,3 +41,39 @@ func tracef(format string, a ...any) {
 		a...,
 	)
 }
+
+func FirstValue(sl []KeyValue, key string) (string, bool) {
+	for _, item := range sl {
+		if item.Key == key {
+			return item.Value, true
+		}
+	}
+
+	return "", false
+}
+
+func LastValue(sl []KeyValue, key string) (string, bool) {
+	v := ""
+	ok := false
+
+	for _, item := range sl {
+		if item.Key == key {
+			v = item.Value
+			ok = true
+		}
+	}
+
+	return v, ok
+}
+
+func AllValues(sl []KeyValue, key string) []string {
+	v := []string{}
+
+	for _, item := range sl {
+		if item.Key == key {
+			v = append(v, item.Value)
+		}
+	}
+
+	return v
+}
