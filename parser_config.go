@@ -35,7 +35,7 @@ type CommandConfig struct {
 	Flags      *Flags
 	Commands   *Commands
 
-	On func(CommandFlag) error `json:"-"`
+	On func(Command) error `json:"-"`
 }
 
 func (cCfg *CommandConfig) init() {
@@ -100,7 +100,7 @@ type FlagConfig struct {
 	Persist    bool
 	ValueNames []string
 
-	On func(CommandFlag) error `json:"-"`
+	On func(Flag) error `json:"-"`
 }
 
 type Flags struct {

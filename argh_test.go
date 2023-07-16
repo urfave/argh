@@ -80,14 +80,14 @@ func BenchmarkArgh(b *testing.B) {
 				Flags: &argh.Flags{
 					Map: map[string]argh.FlagConfig{
 						"ok": {
-							On: func(fl argh.CommandFlag) error {
+							On: func(fl argh.Flag) error {
 								okFlag = ptrTo(true)
 								return nil
 							},
 						},
 						"dur": {
 							NValue: 1,
-							On: func(fl argh.CommandFlag) error {
+							On: func(fl argh.Flag) error {
 								if v, ok := fl.Values["0"]; ok {
 									if pt, err := time.ParseDuration(v); err != nil {
 										durFlag = ptrTo(pt)
@@ -98,7 +98,7 @@ func BenchmarkArgh(b *testing.B) {
 						},
 						"f64": {
 							NValue: 1,
-							On: func(fl argh.CommandFlag) error {
+							On: func(fl argh.Flag) error {
 								if v, ok := fl.Values["0"]; ok {
 									if f, err := strconv.ParseFloat(v, 64); err == nil {
 										f64Flag = ptrTo(f)
@@ -109,7 +109,7 @@ func BenchmarkArgh(b *testing.B) {
 						},
 						"i": {
 							NValue: 1,
-							On: func(fl argh.CommandFlag) error {
+							On: func(fl argh.Flag) error {
 								if v, ok := fl.Values["0"]; ok {
 									if i, err := strconv.ParseInt(v, 10, 64); err == nil {
 										iFlag = ptrTo(int(i))
@@ -120,7 +120,7 @@ func BenchmarkArgh(b *testing.B) {
 						},
 						"i64": {
 							NValue: 1,
-							On: func(fl argh.CommandFlag) error {
+							On: func(fl argh.Flag) error {
 								if v, ok := fl.Values["0"]; ok {
 									if i, err := strconv.ParseInt(v, 10, 64); err == nil {
 										i64Flag = ptrTo(i)
@@ -131,7 +131,7 @@ func BenchmarkArgh(b *testing.B) {
 						},
 						"s": {
 							NValue: 1,
-							On: func(fl argh.CommandFlag) error {
+							On: func(fl argh.Flag) error {
 								if v, ok := fl.Values["0"]; ok {
 									sFlag = ptrTo(v)
 								}
@@ -140,7 +140,7 @@ func BenchmarkArgh(b *testing.B) {
 						},
 						"u": {
 							NValue: 1,
-							On: func(fl argh.CommandFlag) error {
+							On: func(fl argh.Flag) error {
 								if v, ok := fl.Values["0"]; ok {
 									if u, err := strconv.ParseUint(v, 10, 64); err == nil {
 										uFlag = ptrTo(uint(u))
@@ -151,7 +151,7 @@ func BenchmarkArgh(b *testing.B) {
 						},
 						"u64": {
 							NValue: 1,
-							On: func(fl argh.CommandFlag) error {
+							On: func(fl argh.Flag) error {
 								if v, ok := fl.Values["0"]; ok {
 									if u, err := strconv.ParseUint(v, 10, 64); err == nil {
 										u64Flag = ptrTo(u)

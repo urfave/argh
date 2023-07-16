@@ -9,23 +9,23 @@ func ToAST(parseTree []Node) []Node {
 	for i, node := range parseTree {
 		tracef("ToAST i=%d node type=%T", i, node)
 
-		if _, ok := node.(*ArgDelimiter); ok {
+		switch v := node.(type) {
+		case *ArgDelimiter:
 			continue
-		}
-
-		if _, ok := node.(*StopFlag); ok {
+		case *StopFlag:
 			continue
-		}
+		case *Assign:
+			ret = append(ret, v)
 
-		if v, ok := node.(*CompoundShortFlag); ok {
+			continue
+
+		case *CompoundShortFlag:
 			if v.Nodes != nil {
 				ret = append(ret, ToAST(v.Nodes)...)
 			}
 
 			continue
-		}
-
-		if v, ok := node.(*CommandFlag); ok {
+		case *Flag:
 			astNodes := ToAST(v.Nodes)
 
 			if len(astNodes) == 0 {
@@ -34,7 +34,23 @@ func ToAST(parseTree []Node) []Node {
 
 			ret = append(
 				ret,
-				&CommandFlag{
+				&Flag{
+					Name:   v.Name,
+					Values: v.Values,
+					Nodes:  astNodes,
+				})
+
+			continue
+		case *Command:
+			astNodes := ToAST(v.Nodes)
+
+			if len(astNodes) == 0 {
+				astNodes = nil
+			}
+
+			ret = append(
+				ret,
+				&Command{
 					Name:   v.Name,
 					Values: v.Values,
 					Nodes:  astNodes,

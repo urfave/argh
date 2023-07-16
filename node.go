@@ -2,9 +2,16 @@ package argh
 
 type Node interface{}
 
-type TypedNode struct {
-	Type string
-	Node Node
+type ArgDelimiter struct{}
+
+type Assign struct{}
+
+type StdinFlag struct{}
+
+type StopFlag struct{}
+
+type Ident struct {
+	Literal string
 }
 
 type PassthroughArgs struct {
@@ -15,38 +22,42 @@ type CompoundShortFlag struct {
 	Nodes []Node
 }
 
-type Ident struct {
-	Literal string
+type MultiIdent struct {
+	Nodes []Node
 }
 
-type BadArg struct {
-	Literal string
-	From    Pos
-	To      Pos
-}
-
-// CommandFlag is a Node with a name, a slice of child Nodes, and
+// Command is a Node with a name, a slice of child Nodes, and
 // potentially a map of named values derived from the child Nodes
-type CommandFlag struct {
+type Command struct {
 	Name   string
 	Values map[string]string
 	Nodes  []Node
 }
 
-type CommandFlagError struct {
+// Flag is a Node with a name, a slice of child Nodes, and
+// potentially a map of named values derived from the child Nodes
+type Flag struct {
+	Name   string
+	Values map[string]string
+	Nodes  []Node
+}
+
+type CommandError struct {
 	Pos  Position
-	Node CommandFlag
+	Node Node
 	Msg  string
 }
 
-func (e CommandFlagError) Error() string {
+func (e CommandError) Error() string {
 	return e.Msg
 }
 
-type StdinFlag struct{}
+type FlagError struct {
+	Pos  Position
+	Node Node
+	Msg  string
+}
 
-type StopFlag struct{}
-
-type ArgDelimiter struct{}
-
-type Assign struct{}
+func (e FlagError) Error() string {
+	return e.Msg
+}

@@ -9,8 +9,13 @@ import (
 )
 
 func TestParser(t *testing.T) {
-	traceOnCommandFlag := func(cmd argh.CommandFlag) error {
-		t.Logf("CommandFlag.On: %+#[1]v", cmd)
+	traceOnCommand := func(cmd argh.Command) error {
+		t.Logf("Command.On: %+#[1]v", cmd)
+		return nil
+	}
+
+	traceOnFlag := func(fl argh.Flag) error {
+		t.Logf("Flag.On: %+#[1]v", fl)
 		return nil
 	}
 
@@ -32,10 +37,10 @@ func TestParser(t *testing.T) {
 				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"e":   {On: traceOnCommandFlag},
-							"a":   {On: traceOnCommandFlag},
-							"t":   {On: traceOnCommandFlag},
-							"wat": {On: traceOnCommandFlag},
+							"e":   {On: traceOnFlag},
+							"a":   {On: traceOnFlag},
+							"t":   {On: traceOnFlag},
+							"wat": {On: traceOnFlag},
 						},
 					},
 					Commands: &argh.Commands{
@@ -43,29 +48,29 @@ func TestParser(t *testing.T) {
 							"hello": argh.CommandConfig{
 								NValue:     1,
 								ValueNames: []string{"name"},
-								On:         traceOnCommandFlag,
+								On:         traceOnCommand,
 							},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pies",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
 						&argh.CompoundShortFlag{
 							Nodes: []argh.Node{
-								&argh.CommandFlag{Name: "e"},
-								&argh.CommandFlag{Name: "a"},
-								&argh.CommandFlag{Name: "t"},
+								&argh.Flag{Name: "e"},
+								&argh.Flag{Name: "a"},
+								&argh.Flag{Name: "t"},
 							},
 						},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "wat"},
+						&argh.Flag{Name: "wat"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{
+						&argh.Command{
 							Name: "hello",
 							Values: map[string]string{
 								"name": "mario",
@@ -79,14 +84,14 @@ func TestParser(t *testing.T) {
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pies",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{Name: "e"},
-						&argh.CommandFlag{Name: "a"},
-						&argh.CommandFlag{Name: "t"},
-						&argh.CommandFlag{Name: "wat"},
-						&argh.CommandFlag{
+						&argh.Flag{Name: "e"},
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "t"},
+						&argh.Flag{Name: "wat"},
+						&argh.Command{
 							Name: "hello",
 							Values: map[string]string{
 								"name": "mario",
@@ -109,13 +114,13 @@ func TestParser(t *testing.T) {
 					cmdCfg := &argh.CommandConfig{
 						Flags: &argh.Flags{
 							Map: map[string]argh.FlagConfig{
-								"e":   {Persist: true, On: traceOnCommandFlag},
-								"a":   {Persist: true, On: traceOnCommandFlag},
-								"t":   {Persist: true, On: traceOnCommandFlag},
-								"wat": {On: traceOnCommandFlag},
+								"e":   {Persist: true, On: traceOnFlag},
+								"a":   {Persist: true, On: traceOnFlag},
+								"t":   {Persist: true, On: traceOnFlag},
+								"wat": {On: traceOnFlag},
 							},
 						},
-						On: traceOnCommandFlag,
+						On: traceOnCommand,
 					}
 
 					cmdCfg.Commands = &argh.Commands{
@@ -127,7 +132,7 @@ func TestParser(t *testing.T) {
 									Parent: cmdCfg.Flags,
 									Map:    map[string]argh.FlagConfig{},
 								},
-								On: traceOnCommandFlag,
+								On: traceOnCommand,
 							},
 						},
 					}
@@ -136,13 +141,13 @@ func TestParser(t *testing.T) {
 				}(),
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pies",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "wat"},
+						&argh.Flag{Name: "wat"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{
+						&argh.Command{
 							Name: "hello",
 							Values: map[string]string{
 								"name": "mario",
@@ -153,9 +158,9 @@ func TestParser(t *testing.T) {
 								&argh.ArgDelimiter{},
 								&argh.CompoundShortFlag{
 									Nodes: []argh.Node{
-										&argh.CommandFlag{Name: "e"},
-										&argh.CommandFlag{Name: "a"},
-										&argh.CommandFlag{Name: "t"},
+										&argh.Flag{Name: "e"},
+										&argh.Flag{Name: "a"},
+										&argh.Flag{Name: "t"},
 									},
 								},
 							},
@@ -164,20 +169,20 @@ func TestParser(t *testing.T) {
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pies",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{Name: "wat"},
-						&argh.CommandFlag{
+						&argh.Flag{Name: "wat"},
+						&argh.Command{
 							Name: "hello",
 							Values: map[string]string{
 								"name": "mario",
 							},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "mario"},
-								&argh.CommandFlag{Name: "e"},
-								&argh.CommandFlag{Name: "a"},
-								&argh.CommandFlag{Name: "t"},
+								&argh.Flag{Name: "e"},
+								&argh.Flag{Name: "a"},
+								&argh.Flag{Name: "t"},
 							},
 						},
 					},
@@ -188,12 +193,12 @@ func TestParser(t *testing.T) {
 			name: "bare",
 			args: []string{"pizzas"},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 				},
 			},
@@ -202,10 +207,10 @@ func TestParser(t *testing.T) {
 			name: "one positional arg",
 			args: []string{"pizzas", "excel"},
 			cfg: &argh.ParserConfig{
-				Prog: &argh.CommandConfig{NValue: 1, On: traceOnCommandFlag},
+				Prog: &argh.CommandConfig{NValue: 1, On: traceOnCommand},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name:   "pizzas",
 					Values: map[string]string{"0": "excel"},
 					Nodes: []argh.Node{
@@ -215,7 +220,7 @@ func TestParser(t *testing.T) {
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name:   "pizzas",
 					Values: map[string]string{"0": "excel"},
 					Nodes: []argh.Node{
@@ -231,11 +236,11 @@ func TestParser(t *testing.T) {
 				Prog: &argh.CommandConfig{
 					NValue:     argh.OneOrMoreValue,
 					ValueNames: []string{"word"},
-					On:         traceOnCommandFlag,
+					On:         traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Values: map[string]string{
 						"word":   "excel",
@@ -256,7 +261,7 @@ func TestParser(t *testing.T) {
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Values: map[string]string{
 						"word":   "excel",
@@ -274,40 +279,148 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
+			name: "multi-value flags",
+			args: []string{"fjords", "--with=whales,majesticness,waters", "-a", "sparkling,lens flares", "probably ducks"},
+			cfg: &argh.ParserConfig{
+				Prog: &argh.CommandConfig{
+					Flags: &argh.Flags{
+						Map: map[string]argh.FlagConfig{
+							"with": {
+								NValue: argh.OneOrMoreValue,
+								On:     traceOnFlag,
+							},
+							"a": {
+								NValue: argh.OneOrMoreValue,
+								On:     traceOnFlag,
+							},
+						},
+					},
+				},
+			},
+			expPT: []argh.Node{
+				&argh.Command{
+					Name: "fjords",
+					Nodes: []argh.Node{
+						&argh.ArgDelimiter{},
+						&argh.Flag{
+							Name: "with",
+							Values: map[string]string{
+								"0": "whales",
+								"1": "majesticness",
+								"2": "waters",
+							},
+							Nodes: []argh.Node{
+								&argh.Assign{},
+								&argh.MultiIdent{
+									Nodes: []argh.Node{
+										&argh.Ident{Literal: "whales"},
+										&argh.Ident{Literal: "majesticness"},
+										&argh.Ident{Literal: "waters"},
+									},
+								},
+								&argh.ArgDelimiter{},
+							},
+						},
+						&argh.Flag{
+							Name: "a",
+							Values: map[string]string{
+								"0": "sparkling",
+								"1": "lens flares",
+								"2": "probably ducks",
+							},
+							Nodes: []argh.Node{
+								&argh.ArgDelimiter{},
+								&argh.MultiIdent{
+									Nodes: []argh.Node{
+										&argh.Ident{Literal: "sparkling"},
+										&argh.Ident{Literal: "lens flares"},
+									},
+								},
+								&argh.ArgDelimiter{},
+								&argh.Ident{Literal: "probably ducks"},
+							},
+						},
+					},
+				},
+			},
+			expAST: []argh.Node{
+				&argh.Command{
+					Name: "fjords",
+					Nodes: []argh.Node{
+						&argh.Flag{
+							Name: "with",
+							Values: map[string]string{
+								"0": "whales",
+								"1": "majesticness",
+								"2": "waters",
+							},
+							Nodes: []argh.Node{
+								&argh.Assign{},
+								&argh.MultiIdent{
+									Nodes: []argh.Node{
+										&argh.Ident{Literal: "whales"},
+										&argh.Ident{Literal: "majesticness"},
+										&argh.Ident{Literal: "waters"},
+									},
+								},
+							},
+						},
+						&argh.Flag{
+							Name: "a",
+							Values: map[string]string{
+								"0": "sparkling",
+								"1": "lens flares",
+								"2": "probably ducks",
+							},
+							Nodes: []argh.Node{
+								&argh.MultiIdent{
+									Nodes: []argh.Node{
+										&argh.Ident{Literal: "sparkling"},
+										&argh.Ident{Literal: "lens flares"},
+									},
+								},
+								&argh.Ident{Literal: "probably ducks"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "long value-less flags",
 			args: []string{"pizzas", "--tasty", "--fresh", "--super-hot-right-now"},
 			cfg: &argh.ParserConfig{
 				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"tasty":               {On: traceOnCommandFlag},
-							"fresh":               {On: traceOnCommandFlag},
-							"super-hot-right-now": {On: traceOnCommandFlag},
+							"tasty":               {On: traceOnFlag},
+							"fresh":               {On: traceOnFlag},
+							"super-hot-right-now": {On: traceOnFlag},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "tasty"},
+						&argh.Flag{Name: "tasty"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "fresh"},
+						&argh.Flag{Name: "fresh"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "super-hot-right-now"},
+						&argh.Flag{Name: "super-hot-right-now"},
 					},
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{Name: "tasty"},
-						&argh.CommandFlag{Name: "fresh"},
-						&argh.CommandFlag{Name: "super-hot-right-now"},
+						&argh.Flag{Name: "tasty"},
+						&argh.Flag{Name: "fresh"},
+						&argh.Flag{Name: "super-hot-right-now"},
 					},
 				},
 			},
@@ -327,24 +440,24 @@ func TestParser(t *testing.T) {
 					Commands: &argh.Commands{Map: map[string]argh.CommandConfig{}},
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"tasty":               {On: traceOnCommandFlag},
-							"fresh":               argh.FlagConfig{NValue: 1, On: traceOnCommandFlag},
-							"super-hot-right-now": {On: traceOnCommandFlag},
-							"box":                 argh.FlagConfig{NValue: argh.OneOrMoreValue, On: traceOnCommandFlag},
-							"please":              {On: traceOnCommandFlag},
+							"tasty":               {On: traceOnFlag},
+							"fresh":               argh.FlagConfig{NValue: 1, On: traceOnFlag},
+							"super-hot-right-now": {On: traceOnFlag},
+							"box":                 argh.FlagConfig{NValue: argh.OneOrMoreValue, On: traceOnFlag},
+							"please":              {On: traceOnFlag},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "tasty"},
+						&argh.Flag{Name: "tasty"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{
+						&argh.Flag{
 							Name:   "fresh",
 							Values: map[string]string{"0": "soon"},
 							Nodes: []argh.Node{
@@ -353,9 +466,9 @@ func TestParser(t *testing.T) {
 							},
 						},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "super-hot-right-now"},
+						&argh.Flag{Name: "super-hot-right-now"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{
+						&argh.Flag{
 							Name:   "box",
 							Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"},
 							Nodes: []argh.Node{
@@ -368,24 +481,24 @@ func TestParser(t *testing.T) {
 								&argh.ArgDelimiter{},
 							},
 						},
-						&argh.CommandFlag{Name: "please"},
+						&argh.Flag{Name: "please"},
 					},
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{Name: "tasty"},
-						&argh.CommandFlag{
+						&argh.Flag{Name: "tasty"},
+						&argh.Flag{
 							Name:   "fresh",
 							Values: map[string]string{"0": "soon"},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "soon"},
 							},
 						},
-						&argh.CommandFlag{Name: "super-hot-right-now"},
-						&argh.CommandFlag{
+						&argh.Flag{Name: "super-hot-right-now"},
+						&argh.Flag{
 							Name:   "box",
 							Values: map[string]string{"0": "square", "1": "shaped", "2": "hot"},
 							Nodes: []argh.Node{
@@ -394,7 +507,7 @@ func TestParser(t *testing.T) {
 								&argh.Ident{Literal: "hot"},
 							},
 						},
-						&argh.CommandFlag{Name: "please"},
+						&argh.Flag{Name: "please"},
 					},
 				},
 			},
@@ -406,34 +519,34 @@ func TestParser(t *testing.T) {
 				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"t": {On: traceOnCommandFlag},
-							"f": {On: traceOnCommandFlag},
-							"s": {On: traceOnCommandFlag},
+							"t": {On: traceOnFlag},
+							"f": {On: traceOnFlag},
+							"s": {On: traceOnFlag},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "t"},
+						&argh.Flag{Name: "t"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "f"},
+						&argh.Flag{Name: "f"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "s"},
+						&argh.Flag{Name: "s"},
 					},
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{Name: "t"},
-						&argh.CommandFlag{Name: "f"},
-						&argh.CommandFlag{Name: "s"},
+						&argh.Flag{Name: "t"},
+						&argh.Flag{Name: "f"},
+						&argh.Flag{Name: "s"},
 					},
 				},
 			},
@@ -445,51 +558,51 @@ func TestParser(t *testing.T) {
 				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"a": {On: traceOnCommandFlag},
-							"b": {On: traceOnCommandFlag},
-							"c": {On: traceOnCommandFlag},
-							"l": {On: traceOnCommandFlag},
-							"o": {On: traceOnCommandFlag},
+							"a": {On: traceOnFlag},
+							"b": {On: traceOnFlag},
+							"c": {On: traceOnFlag},
+							"l": {On: traceOnFlag},
+							"o": {On: traceOnFlag},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
 						&argh.CompoundShortFlag{
 							Nodes: []argh.Node{
-								&argh.CommandFlag{Name: "a"},
-								&argh.CommandFlag{Name: "c"},
-								&argh.CommandFlag{Name: "a"},
+								&argh.Flag{Name: "a"},
+								&argh.Flag{Name: "c"},
+								&argh.Flag{Name: "a"},
 							},
 						},
 						&argh.ArgDelimiter{},
 						&argh.CompoundShortFlag{
 							Nodes: []argh.Node{
-								&argh.CommandFlag{Name: "b"},
-								&argh.CommandFlag{Name: "l"},
-								&argh.CommandFlag{Name: "o"},
-								&argh.CommandFlag{Name: "l"},
+								&argh.Flag{Name: "b"},
+								&argh.Flag{Name: "l"},
+								&argh.Flag{Name: "o"},
+								&argh.Flag{Name: "l"},
 							},
 						},
 					},
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{Name: "a"},
-						&argh.CommandFlag{Name: "c"},
-						&argh.CommandFlag{Name: "a"},
-						&argh.CommandFlag{Name: "b"},
-						&argh.CommandFlag{Name: "l"},
-						&argh.CommandFlag{Name: "o"},
-						&argh.CommandFlag{Name: "l"},
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "c"},
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "b"},
+						&argh.Flag{Name: "l"},
+						&argh.Flag{Name: "o"},
+						&argh.Flag{Name: "l"},
 					},
 				},
 			},
@@ -502,26 +615,26 @@ func TestParser(t *testing.T) {
 					Commands: &argh.Commands{Map: map[string]argh.CommandConfig{}},
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"a":  {On: traceOnCommandFlag},
-							"b":  argh.FlagConfig{NValue: 1, On: traceOnCommandFlag},
-							"ca": {On: traceOnCommandFlag},
-							"l":  {On: traceOnCommandFlag},
-							"o":  {On: traceOnCommandFlag},
+							"a":  {On: traceOnFlag},
+							"b":  argh.FlagConfig{NValue: 1, On: traceOnFlag},
+							"ca": {On: traceOnFlag},
+							"l":  {On: traceOnFlag},
+							"o":  {On: traceOnFlag},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "a"},
+						&argh.Flag{Name: "a"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "ca"},
+						&argh.Flag{Name: "ca"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{
+						&argh.Flag{
 							Name:   "b",
 							Values: map[string]string{"0": "1312"},
 							Nodes: []argh.Node{
@@ -532,30 +645,30 @@ func TestParser(t *testing.T) {
 						&argh.ArgDelimiter{},
 						&argh.CompoundShortFlag{
 							Nodes: []argh.Node{
-								&argh.CommandFlag{Name: "l"},
-								&argh.CommandFlag{Name: "o"},
-								&argh.CommandFlag{Name: "l"},
+								&argh.Flag{Name: "l"},
+								&argh.Flag{Name: "o"},
+								&argh.Flag{Name: "l"},
 							},
 						},
 					},
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{Name: "a"},
-						&argh.CommandFlag{Name: "ca"},
-						&argh.CommandFlag{
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "ca"},
+						&argh.Flag{
 							Name:   "b",
 							Values: map[string]string{"0": "1312"},
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "1312"},
 							},
 						},
-						&argh.CommandFlag{Name: "l"},
-						&argh.CommandFlag{Name: "o"},
-						&argh.CommandFlag{Name: "l"},
+						&argh.Flag{Name: "l"},
+						&argh.Flag{Name: "o"},
+						&argh.Flag{Name: "l"},
 					},
 				},
 			},
@@ -573,7 +686,7 @@ func TestParser(t *testing.T) {
 										"fry": argh.CommandConfig{
 											Flags: &argh.Flags{
 												Map: map[string]argh.FlagConfig{
-													"forever": {On: traceOnCommandFlag},
+													"forever": {On: traceOnFlag},
 												},
 											},
 										},
@@ -583,15 +696,15 @@ func TestParser(t *testing.T) {
 						},
 					},
 					Flags: &argh.Flags{Map: map[string]argh.FlagConfig{}},
-					On:    traceOnCommandFlag,
+					On:    traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{
+						&argh.Command{
 							Name: "fly",
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
@@ -605,13 +718,13 @@ func TestParser(t *testing.T) {
 								&argh.ArgDelimiter{},
 								&argh.Ident{Literal: "times"},
 								&argh.ArgDelimiter{},
-								&argh.CommandFlag{
+								&argh.Command{
 									Name: "fry",
 									Nodes: []argh.Node{
 										&argh.ArgDelimiter{},
 										&argh.Ident{Literal: "deeply"},
 										&argh.ArgDelimiter{},
-										&argh.CommandFlag{Name: "forever"},
+										&argh.Flag{Name: "forever"},
 									},
 								},
 							},
@@ -620,10 +733,10 @@ func TestParser(t *testing.T) {
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{
+						&argh.Command{
 							Name: "fly",
 							Nodes: []argh.Node{
 								&argh.Ident{Literal: "freely"},
@@ -631,11 +744,11 @@ func TestParser(t *testing.T) {
 								&argh.Ident{Literal: "and"},
 								&argh.Ident{Literal: "other"},
 								&argh.Ident{Literal: "times"},
-								&argh.CommandFlag{
+								&argh.Command{
 									Name: "fry",
 									Nodes: []argh.Node{
 										&argh.Ident{Literal: "deeply"},
-										&argh.CommandFlag{Name: "forever"},
+										&argh.Flag{Name: "forever"},
 									},
 								},
 							},
@@ -651,29 +764,29 @@ func TestParser(t *testing.T) {
 				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"a": {NValue: argh.ZeroOrMoreValue, On: traceOnCommandFlag},
-							"d": {NValue: argh.OneOrMoreValue, On: traceOnCommandFlag},
-							"e": {On: traceOnCommandFlag},
-							"l": {On: traceOnCommandFlag},
-							"n": {On: traceOnCommandFlag},
-							"o": {NValue: 1, ValueNames: []string{"level"}, On: traceOnCommandFlag},
-							"s": {NValue: argh.ZeroOrMoreValue, On: traceOnCommandFlag},
+							"a": {NValue: argh.ZeroOrMoreValue, On: traceOnFlag},
+							"d": {NValue: argh.OneOrMoreValue, On: traceOnFlag},
+							"e": {On: traceOnFlag},
+							"l": {On: traceOnFlag},
+							"n": {On: traceOnFlag},
+							"o": {NValue: 1, ValueNames: []string{"level"}, On: traceOnFlag},
+							"s": {NValue: argh.ZeroOrMoreValue, On: traceOnFlag},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
 						&argh.CompoundShortFlag{
 							Nodes: []argh.Node{
-								&argh.CommandFlag{Name: "n"},
-								&argh.CommandFlag{Name: "e"},
-								&argh.CommandFlag{Name: "e"},
-								&argh.CommandFlag{
+								&argh.Flag{Name: "n"},
+								&argh.Flag{Name: "e"},
+								&argh.Flag{Name: "e"},
+								&argh.Flag{
 									Name: "d",
 									Values: map[string]string{
 										"0": "sauce",
@@ -694,10 +807,10 @@ func TestParser(t *testing.T) {
 						},
 						&argh.CompoundShortFlag{
 							Nodes: []argh.Node{
-								&argh.CommandFlag{Name: "a"},
-								&argh.CommandFlag{Name: "l"},
-								&argh.CommandFlag{Name: "s"},
-								&argh.CommandFlag{
+								&argh.Flag{Name: "a"},
+								&argh.Flag{Name: "l"},
+								&argh.Flag{Name: "s"},
+								&argh.Flag{
 									Name: "o",
 									Values: map[string]string{
 										"level": "over9000",
@@ -713,13 +826,13 @@ func TestParser(t *testing.T) {
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{Name: "n"},
-						&argh.CommandFlag{Name: "e"},
-						&argh.CommandFlag{Name: "e"},
-						&argh.CommandFlag{
+						&argh.Flag{Name: "n"},
+						&argh.Flag{Name: "e"},
+						&argh.Flag{Name: "e"},
+						&argh.Flag{
 							Name: "d",
 							Values: map[string]string{
 								"0": "sauce",
@@ -732,10 +845,10 @@ func TestParser(t *testing.T) {
 								&argh.Ident{Literal: "love"},
 							},
 						},
-						&argh.CommandFlag{Name: "a"},
-						&argh.CommandFlag{Name: "l"},
-						&argh.CommandFlag{Name: "s"},
-						&argh.CommandFlag{
+						&argh.Flag{Name: "a"},
+						&argh.Flag{Name: "l"},
+						&argh.Flag{Name: "s"},
+						&argh.Flag{
 							Name: "o",
 							Values: map[string]string{
 								"level": "over9000",
@@ -758,7 +871,7 @@ func TestParser(t *testing.T) {
 							"fly": argh.CommandConfig{
 								Flags: &argh.Flags{
 									Map: map[string]argh.FlagConfig{
-										"freely": {On: traceOnCommandFlag},
+										"freely": {On: traceOnFlag},
 									},
 								},
 								Commands: &argh.Commands{
@@ -766,10 +879,10 @@ func TestParser(t *testing.T) {
 										"fry": argh.CommandConfig{
 											Flags: &argh.Flags{
 												Map: map[string]argh.FlagConfig{
-													"deeply": {On: traceOnCommandFlag},
-													"w":      {On: traceOnCommandFlag},
-													"A":      {On: traceOnCommandFlag},
-													"t":      argh.FlagConfig{NValue: 1, On: traceOnCommandFlag},
+													"deeply": {On: traceOnFlag},
+													"w":      {On: traceOnFlag},
+													"A":      {On: traceOnFlag},
+													"t":      argh.FlagConfig{NValue: 1, On: traceOnFlag},
 												},
 											},
 										},
@@ -779,31 +892,31 @@ func TestParser(t *testing.T) {
 						},
 					},
 					Flags: &argh.Flags{Map: map[string]argh.FlagConfig{}},
-					On:    traceOnCommandFlag,
+					On:    traceOnCommand,
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{
+						&argh.Command{
 							Name: "fly",
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
-								&argh.CommandFlag{Name: "freely"},
+								&argh.Flag{Name: "freely"},
 								&argh.ArgDelimiter{},
-								&argh.CommandFlag{
+								&argh.Command{
 									Name: "fry",
 									Nodes: []argh.Node{
 										&argh.ArgDelimiter{},
-										&argh.CommandFlag{Name: "deeply"},
+										&argh.Flag{Name: "deeply"},
 										&argh.ArgDelimiter{},
 										&argh.CompoundShortFlag{
 											Nodes: []argh.Node{
-												&argh.CommandFlag{Name: "w"},
-												&argh.CommandFlag{Name: "A"},
-												&argh.CommandFlag{
+												&argh.Flag{Name: "w"},
+												&argh.Flag{Name: "A"},
+												&argh.Flag{
 													Name:   "t",
 													Values: map[string]string{"0": "hugs"},
 													Nodes: []argh.Node{
@@ -821,20 +934,20 @@ func TestParser(t *testing.T) {
 				},
 			},
 			expAST: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
-						&argh.CommandFlag{
+						&argh.Command{
 							Name: "fly",
 							Nodes: []argh.Node{
-								&argh.CommandFlag{Name: "freely"},
-								&argh.CommandFlag{
+								&argh.Flag{Name: "freely"},
+								&argh.Command{
 									Name: "fry",
 									Nodes: []argh.Node{
-										&argh.CommandFlag{Name: "deeply"},
-										&argh.CommandFlag{Name: "w"},
-										&argh.CommandFlag{Name: "A"},
-										&argh.CommandFlag{
+										&argh.Flag{Name: "deeply"},
+										&argh.Flag{Name: "w"},
+										&argh.Flag{Name: "A"},
+										&argh.Flag{
 											Name:   "t",
 											Values: map[string]string{"0": "hugs"},
 											Nodes: []argh.Node{
@@ -860,7 +973,7 @@ func TestParser(t *testing.T) {
 								NValue: 1,
 								Flags: &argh.Flags{
 									Map: map[string]argh.FlagConfig{
-										"FIERCENESS": argh.FlagConfig{NValue: 1, On: traceOnCommandFlag},
+										"FIERCENESS": argh.FlagConfig{NValue: 1, On: traceOnFlag},
 									},
 								},
 							},
@@ -868,13 +981,13 @@ func TestParser(t *testing.T) {
 					},
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"w":       {On: traceOnCommandFlag},
-							"A":       {On: traceOnCommandFlag},
-							"T":       {NValue: 1, On: traceOnCommandFlag},
-							"hecKing": {On: traceOnCommandFlag},
+							"w":       {On: traceOnFlag},
+							"A":       {On: traceOnFlag},
+							"T":       {NValue: 1, On: traceOnFlag},
+							"hecKing": {On: traceOnFlag},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 				ScannerConfig: &argh.ScannerConfig{
 					AssignmentOperator: '@',
@@ -883,15 +996,15 @@ func TestParser(t *testing.T) {
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "PIZZAs",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
 						&argh.CompoundShortFlag{
 							Nodes: []argh.Node{
-								&argh.CommandFlag{Name: "w"},
-								&argh.CommandFlag{Name: "A"},
-								&argh.CommandFlag{
+								&argh.Flag{Name: "w"},
+								&argh.Flag{Name: "A"},
+								&argh.Flag{
 									Name:   "T",
 									Values: map[string]string{"0": "golf"},
 									Nodes: []argh.Node{
@@ -902,16 +1015,16 @@ func TestParser(t *testing.T) {
 							},
 						},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "hecKing"},
+						&argh.Flag{Name: "hecKing"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{
+						&argh.Command{
 							Name:   "goose",
 							Values: map[string]string{"0": "bonk"},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
 								&argh.Ident{Literal: "bonk"},
 								&argh.ArgDelimiter{},
-								&argh.CommandFlag{
+								&argh.Flag{
 									Name:   "FIERCENESS",
 									Values: map[string]string{"0": "-2"},
 									Nodes: []argh.Node{
@@ -932,9 +1045,9 @@ func TestParser(t *testing.T) {
 				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"f": {On: traceOnCommandFlag},
-							"L": {On: traceOnCommandFlag},
-							"o": argh.FlagConfig{NValue: 1, On: traceOnCommandFlag},
+							"f": {On: traceOnFlag},
+							"L": {On: traceOnFlag},
+							"o": argh.FlagConfig{NValue: 1, On: traceOnFlag},
 						},
 					},
 					Commands: &argh.Commands{
@@ -942,7 +1055,7 @@ func TestParser(t *testing.T) {
 							"hats": {},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 				ScannerConfig: &argh.ScannerConfig{
 					AssignmentOperator: ':',
@@ -951,15 +1064,15 @@ func TestParser(t *testing.T) {
 				},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "hotdog",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "f"},
+						&argh.Flag{Name: "f"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "L"},
+						&argh.Flag{Name: "L"},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{
+						&argh.Flag{
 							Name:   "o",
 							Values: map[string]string{"0": "ppy"},
 							Nodes: []argh.Node{
@@ -968,7 +1081,7 @@ func TestParser(t *testing.T) {
 							},
 						},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "hats"},
+						&argh.Command{Name: "hats"},
 					},
 				},
 			},
@@ -980,22 +1093,22 @@ func TestParser(t *testing.T) {
 				Prog: &argh.CommandConfig{
 					Flags: &argh.Flags{
 						Map: map[string]argh.FlagConfig{
-							"wat": {On: traceOnCommandFlag},
+							"wat": {On: traceOnFlag},
 						},
 					},
-					On: traceOnCommandFlag,
+					On: traceOnCommand,
 				},
 			},
 			expErr: argh.ParserErrorList{
 				&argh.ParserError{Pos: argh.Position{Column: 8}, Msg: "invalid bare assignment"},
 			},
 			expPT: []argh.Node{
-				&argh.CommandFlag{
+				&argh.Command{
 					Name: "pizzas",
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
 						&argh.ArgDelimiter{},
-						&argh.CommandFlag{Name: "wat"},
+						&argh.Command{Name: "wat"},
 					},
 				},
 			},

@@ -95,7 +95,7 @@ func (p *parser) next() {
 func (p *parser) parseCommand(cCfg *CommandConfig) (Node, error) {
 	tracef("parseCommand(%+#v)", cCfg)
 
-	node := &CommandFlag{
+	node := &Command{
 		Name: p.lit,
 	}
 	values := map[string]string{}
@@ -230,14 +230,14 @@ func (p *parser) parseFlag(flags *Flags) (Node, error) {
 }
 
 func (p *parser) parseShortFlag(flags *Flags) (Node, error) {
-	node := &CommandFlag{Name: string(p.lit[1])}
+	node := &Flag{Name: string(p.lit[1])}
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
 		errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
 		p.addError(errMsg)
 
-		return node, &CommandFlagError{
+		return node, &FlagError{
 			Pos:  Position{Column: int(p.pos)},
 			Node: *node,
 			Msg:  errMsg,
@@ -248,14 +248,14 @@ func (p *parser) parseShortFlag(flags *Flags) (Node, error) {
 }
 
 func (p *parser) parseLongFlag(flags *Flags) (Node, error) {
-	node := &CommandFlag{Name: string(p.lit[2:])}
+	node := &Flag{Name: string(p.lit[2:])}
 
 	flCfg, ok := flags.Get(node.Name)
 	if !ok {
 		errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
 		p.addError(errMsg)
 
-		return node, &CommandFlagError{
+		return node, &FlagError{
 			Pos:  Position{Column: int(p.pos)},
 			Node: *node,
 			Msg:  errMsg,
@@ -266,20 +266,20 @@ func (p *parser) parseLongFlag(flags *Flags) (Node, error) {
 }
 
 func (p *parser) parseCompoundShortFlag(flags *Flags) (Node, error) {
-	unparsedFlags := []*CommandFlag{}
+	unparsedFlags := []*Flag{}
 	unparsedFlagConfigs := []FlagConfig{}
 
 	withoutFlagPrefix := p.lit[1:]
 
 	for _, r := range withoutFlagPrefix {
-		node := &CommandFlag{Name: string(r)}
+		node := &Flag{Name: string(r)}
 
 		flCfg, ok := flags.Get(node.Name)
 		if !ok {
 			errMsg := fmt.Sprintf("unknown flag %[1]q", node.Name)
 			p.addError(errMsg)
 
-			return node, &CommandFlagError{
+			return node, &FlagError{
 				Pos:  Position{Column: int(p.pos)},
 				Node: *node,
 				Msg:  errMsg,
@@ -333,11 +333,11 @@ func (p *parser) parseCompoundShortFlag(flags *Flags) (Node, error) {
 	return &CompoundShortFlag{Nodes: flagNodes}, nil
 }
 
-func (p *parser) parseConfiguredFlag(node *CommandFlag, flCfg FlagConfig, nValueOverride *NValue) (Node, error) {
+func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverride *NValue) (Node, error) {
 	values := map[string]string{}
 	nodes := []Node{}
 
-	atExit := func() (*CommandFlag, error) {
+	atExit := func() (*Flag, error) {
 		if len(nodes) > 0 {
 			node.Nodes = nodes
 		}
@@ -382,7 +382,7 @@ func (p *parser) parseConfiguredFlag(node *CommandFlag, flCfg FlagConfig, nValue
 			nodes = append(nodes, &Assign{})
 
 			continue
-		case IDENT, STDIN_FLAG:
+		case IDENT, STDIN_FLAG, MULTI_VALUE_DELIMITER:
 			name := fmt.Sprintf("%d", identIndex)
 
 			tracef("parseConfiguredFlag(...) checking for name of identIndex=%d", identIndex)
@@ -397,15 +397,40 @@ func (p *parser) parseConfiguredFlag(node *CommandFlag, flCfg FlagConfig, nValue
 				tracef("parseConfiguredFlag(...) setting name=%s", name)
 			}
 
-			values[name] = p.lit
-
-			if p.tok == STDIN_FLAG {
-				nodes = append(nodes, &StdinFlag{})
-			} else {
-				nodes = append(nodes, &Ident{Literal: p.lit})
+			if p.tok != MULTI_VALUE_DELIMITER {
+				values[name] = p.lit
 			}
 
-			identIndex++
+			addNode := func(node Node) {
+				if len(nodes) > 0 {
+					if v, ok := nodes[len(nodes)-1].(*MultiIdent); ok {
+						v.Nodes = append(v.Nodes, node)
+						return
+					}
+				}
+
+				nodes = append(nodes, node)
+			}
+
+			if p.tok == STDIN_FLAG {
+				addNode(&StdinFlag{})
+			} else if p.tok == MULTI_VALUE_DELIMITER {
+				if len(nodes) > 0 {
+					if v, ok := nodes[len(nodes)-1].(*Ident); ok {
+						nodes[len(nodes)-1] = &MultiIdent{Nodes: []Node{v}}
+					} else if v, ok := nodes[len(nodes)-1].(*StdinFlag); ok {
+						nodes[len(nodes)-1] = &MultiIdent{Nodes: []Node{v}}
+					}
+				} else {
+					nodes = append(nodes, &MultiIdent{Nodes: []Node{}})
+				}
+			} else {
+				addNode(&Ident{Literal: p.lit})
+			}
+
+			if p.tok != MULTI_VALUE_DELIMITER {
+				identIndex++
+			}
 		default:
 			tracef("parseConfiguredFlag(...) breaking on %s %q %v; setting buffered=true", p.tok, p.lit, p.pos)
 			p.buffered = true

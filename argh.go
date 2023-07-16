@@ -3,35 +3,41 @@ package argh
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
-	"path/filepath"
 	"runtime"
+	"strings"
 )
 
 var (
-	isTracingOn = os.Getenv("ARGH_TRACING") == "on"
-	traceLogger *log.Logger
+	isTracingOn = os.Getenv("URFAVE_ARGH_TRACING") == "on"
 
-	Err = errors.New("argh error")
+	Err = errors.New("urfave/argh error")
 )
 
-func init() {
+func tracef(format string, a ...any) {
 	if !isTracingOn {
 		return
 	}
 
-	traceLogger = log.New(os.Stderr, "## ARGH TRACE ", 0)
-}
-
-func tracef(format string, v ...any) {
-	if !isTracingOn {
-		return
+	if !strings.HasSuffix(format, "\n") {
+		format = format + "\n"
 	}
 
-	if _, file, line, ok := runtime.Caller(1); ok {
-		format = fmt.Sprintf("%v:%v ", filepath.Base(file), line) + format
-	}
+	pc, file, line, _ := runtime.Caller(1)
+	cf := runtime.FuncForPC(pc)
 
-	traceLogger.Printf(format, v...)
+	fmt.Fprintf(
+		os.Stderr,
+		strings.Join([]string{
+			"## URFAVE ARGH TRACE ",
+			file,
+			":",
+			fmt.Sprintf("%v", line),
+			" ",
+			fmt.Sprintf("(%s)", cf.Name()),
+			" ",
+			format,
+		}, ""),
+		a...,
+	)
 }
