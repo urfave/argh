@@ -11,7 +11,7 @@ type StdinFlag struct{}
 type StopFlag struct{}
 
 type Ident struct {
-	Literal string
+	Value string
 }
 
 type PassthroughArgs struct {

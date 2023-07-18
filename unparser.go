@@ -27,7 +27,7 @@ func UnparseTree(nodes []Node, cfg *ScannerConfig) ([]string, error) {
 			buf = append(buf, string(cfg.FlagPrefix)+string(cfg.FlagPrefix))
 			continue
 		case *Ident:
-			buf = append(buf, v.Literal)
+			buf = append(buf, v.Value)
 			continue
 		case *PassthroughArgs:
 			sv, err := UnparseTree(v.Nodes, cfg)

@@ -119,82 +119,103 @@ func ExampleParserConfig() {
 
 	// Output:
 	// prog -a Name: "a"
-	// prog -a Values: map["0":"from" "1":"the"]
+	// prog -a Values: [{"0" "from"} {"1" "the"}]
 	// prog -a len(Nodes): 4
 	// prog sub -c Name: "c"
-	// prog sub -c Values: map["feels":"hurlish"]
+	// prog sub -c Values: [{"feels" "hurlish"}]
 	// prog sub -c len(Nodes): 2
 	// prog -b Name: "b"
-	// prog -b Values: map[]
+	// prog -b Values: []
 	// prog -b len(Nodes): 0
 	// prog sub Name: "sub"
-	// prog sub Values: map["comms":"selma" "navigator":"patty" "pilot":"marge"]
+	// prog sub Values: [{"pilot" "marge"} {"navigator" "patty"} {"comms" "selma"}]
 	// prog sub len(Nodes): 10
 	// prog Name: "hello"
-	// prog Values: map["val":"ether"]
+	// prog Values: [{"val" "ether"}]
 	// prog len(Nodes): 6
 	// command state: {
 	//   "prog": {
 	//     "Name": "hello",
-	//     "Values": {
-	//       "val": "ether"
-	//     },
+	//     "Values": [
+	//       {
+	//         "Key": "val",
+	//         "Value": "ether"
+	//       }
+	//     ],
 	//     "Nodes": [
 	//       {},
 	//       {
 	//         "Name": "a",
-	//         "Values": {
-	//           "0": "from",
-	//           "1": "the"
-	//         },
+	//         "Values": [
+	//           {
+	//             "Key": "0",
+	//             "Value": "from"
+	//           },
+	//           {
+	//             "Key": "1",
+	//             "Value": "the"
+	//           }
+	//         ],
 	//         "Nodes": [
 	//           {},
 	//           {
-	//             "Literal": "from"
+	//             "Value": "from"
 	//           },
 	//           {},
 	//           {
-	//             "Literal": "the"
+	//             "Value": "the"
 	//           }
 	//         ]
 	//       },
 	//       {},
 	//       {
-	//         "Literal": "ether"
+	//         "Value": "ether"
 	//       },
 	//       {},
 	//       {
 	//         "Name": "sub",
-	//         "Values": {
-	//           "comms": "selma",
-	//           "navigator": "patty",
-	//           "pilot": "marge"
-	//         },
+	//         "Values": [
+	//           {
+	//             "Key": "pilot",
+	//             "Value": "marge"
+	//           },
+	//           {
+	//             "Key": "navigator",
+	//             "Value": "patty"
+	//           },
+	//           {
+	//             "Key": "comms",
+	//             "Value": "selma"
+	//           }
+	//         ],
 	//         "Nodes": [
 	//           {},
 	//           {
-	//             "Literal": "marge"
+	//             "Value": "marge"
 	//           },
 	//           {},
 	//           {
 	//             "Name": "c",
-	//             "Values": {
-	//               "feels": "hurlish"
-	//             },
+	//             "Values": [
+	//               {
+	//                 "Key": "feels",
+	//                 "Value": "hurlish"
+	//               }
+	//             ],
 	//             "Nodes": [
 	//               {},
 	//               {
-	//                 "Literal": "hurlish"
+	//                 "Value": "hurlish"
 	//               }
 	//             ]
 	//           },
 	//           {},
 	//           {
-	//             "Literal": "patty"
+	//             "Value": "patty"
 	//           },
 	//           {},
 	//           {
-	//             "Literal": "selma"
+	//             "Value": "selma"
 	//           },
 	//           {},
 	//           {
@@ -208,36 +229,48 @@ func ExampleParserConfig() {
 	//   },
 	//   "sub": {
 	//     "Name": "sub",
-	//     "Values": {
-	//       "comms": "selma",
-	//       "navigator": "patty",
-	//       "pilot": "marge"
-	//     },
+	//     "Values": [
+	//       {
+	//         "Key": "pilot",
+	//         "Value": "marge"
+	//       },
+	//       {
+	//         "Key": "navigator",
+	//         "Value": "patty"
+	//       },
+	//       {
+	//         "Key": "comms",
+	//         "Value": "selma"
+	//       }
+	//     ],
 	//     "Nodes": [
 	//       {},
 	//       {
-	//         "Literal": "marge"
+	//         "Value": "marge"
 	//       },
 	//       {},
 	//       {
 	//         "Name": "c",
-	//         "Values": {
-	//           "feels": "hurlish"
-	//         },
+	//         "Values": [
+	//           {
+	//             "Key": "feels",
+	//             "Value": "hurlish"
+	//           }
+	//         ],
 	//         "Nodes": [
 	//           {},
 	//           {
-	//             "Literal": "hurlish"
+	//             "Value": "hurlish"
 	//           }
 	//         ]
 	//       },
 	//       {},
 	//       {
-	//         "Literal": "patty"
+	//         "Value": "patty"
 	//       },
 	//       {},
 	//       {
-	//         "Literal": "selma"
+	//         "Value": "selma"
 	//       },
 	//       {},
 	//       {
@@ -251,18 +284,24 @@ func ExampleParserConfig() {
 	// flag state: {
 	//   "a": {
 	//     "Name": "a",
-	//     "Values": {
-	//       "0": "from",
-	//       "1": "the"
-	//     },
+	//     "Values": [
+	//       {
+	//         "Key": "0",
+	//         "Value": "from"
+	//       },
+	//       {
+	//         "Key": "1",
+	//         "Value": "the"
+	//       }
+	//     ],
 	//     "Nodes": [
 	//       {},
 	//       {
-	//         "Literal": "from"
+	//         "Value": "from"
 	//       },
 	//       {},
 	//       {
-	//         "Literal": "the"
+	//         "Value": "the"
 	//       }
 	//     ]
 	//   },
@@ -273,13 +312,16 @@ func ExampleParserConfig() {
 	//   },
 	//   "c": {
 	//     "Name": "c",
-	//     "Values": {
-	//       "feels": "hurlish"
-	//     },
+	//     "Values": [
+	//       {
+	//         "Key": "feels",
+	//         "Value": "hurlish"
+	//       }
+	//     ],
 	//     "Nodes": [
 	//       {},
 	//       {
-	//         "Literal": "hurlish"
+	//         "Value": "hurlish"
 	//       }
 	//     ]
 	//   }

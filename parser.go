@@ -66,8 +66,9 @@ func (p *parser) parseArgs() (*ParseTree, error) {
 	}
 
 	tracef("parseArgs() parsing %q as program command; cfg=%+#v", p.lit, p.cfg.Prog)
-	prog, err := p.parseCommand(p.cfg.Prog)
-	if err != nil {
+
+	prog := &Command{Name: p.lit}
+	if err := p.parseCommandWithValue(prog, p.cfg.Prog); err != nil {
 		return nil, err
 	}
 
@@ -92,140 +93,28 @@ func (p *parser) next() {
 	tracef("next() after scan: %v %q %v", p.tok, p.lit, p.pos)
 }
 
-func (p *parser) parseCommand(cCfg *CommandConfig) (Node, error) {
-	tracef("parseCommand(%+#v)", cCfg)
-
-	node := &Command{
-		Name: p.lit,
-	}
-	values := []KeyValue{}
-	nodes := []Node{}
-
-	identIndex := 0
-
-	for i := 0; p.tok != EOL; i++ {
-		if !p.buffered {
-			tracef("parseCommand(...) buffered=false; scanning next")
-			p.next()
-		}
-
-		p.buffered = false
-
-		tracef("parseCommand(...) for=%d values=%+#v", i, values)
-		tracef("parseCommand(...) for=%d nodes=%+#v", i, nodes)
-		tracef("parseCommand(...) for=%d tok=%s lit=%q pos=%v", i, p.tok, p.lit, p.pos)
-
-		tracef("parseCommand(...) cCfg=%+#v", cCfg)
-
-		if subCfg, ok := cCfg.GetCommandConfig(p.lit); ok {
-			subCommand := p.lit
-
-			subNode, err := p.parseCommand(&subCfg)
-			if err != nil {
-				return node, err
-			}
-
-			nodes = append(nodes, subNode)
-
-			tracef("parseCommand(...) breaking after sub-command=%v", subCommand)
-			break
-		}
-
-		switch p.tok {
-		case ARG_DELIMITER:
-			tracef("parseCommand(...) handling %s", p.tok)
-
-			nodes = append(nodes, &ArgDelimiter{})
-
-			continue
-		case IDENT, STDIN_FLAG:
-			tracef("parseCommand(...) handling %s", p.tok)
-
-			if cCfg.NValue.Contains(identIndex) {
-				name := fmt.Sprintf("%d", identIndex)
-
-				tracef("parseCommand(...) checking for name of identIndex=%d", identIndex)
-
-				if len(cCfg.ValueNames) > identIndex {
-					name = cCfg.ValueNames[identIndex]
-					tracef("parseCommand(...) setting name=%s from config value names", name)
-				} else if len(cCfg.ValueNames) == 1 && (cCfg.NValue == OneOrMoreValue || cCfg.NValue == ZeroOrMoreValue) {
-					name = fmt.Sprintf("%s.%d", cCfg.ValueNames[0], identIndex)
-					tracef("parseCommand(...) setting name=%s from repeating value name", name)
-				}
-
-				values = append(values, KeyValue{Key: name, Value: p.lit})
-			}
-
-			if p.tok == STDIN_FLAG {
-				nodes = append(nodes, &StdinFlag{})
-			} else {
-				nodes = append(nodes, &Ident{Literal: p.lit})
-			}
-
-			identIndex++
-		case LONG_FLAG, SHORT_FLAG, COMPOUND_SHORT_FLAG:
-			tok := p.tok
-
-			flagNode, err := p.parseFlag(cCfg.Flags)
-			if err != nil {
-				return node, err
-			}
-
-			tracef("parseCommand(...) appending %s node=%+#v", tok, flagNode)
-
-			nodes = append(nodes, flagNode)
-		case ASSIGN:
-			tracef("parseCommand(...) error on bare %s", p.tok)
-
-			p.addError("invalid bare assignment")
-
-			break
-		default:
-			tracef("parseCommand(...) breaking on %s", p.tok)
-			break
-		}
-	}
-
-	if len(nodes) > 0 {
-		node.Nodes = nodes
-	}
-
-	if len(values) > 0 {
-		node.Values = values
-	}
-
-	if cCfg.On != nil {
-		tracef("parseCommand(...) calling command config handler for node=%+#v", node)
-		if err := cCfg.On(*node); err != nil {
-			return node, err
-		}
-	} else {
-		tracef("parseCommand(...) no command config handler for node=%+#v", node)
-	}
-
-	tracef("parseCommand(...) returning node=%+#v", node)
-	return node, nil
-}
-
 func (p *parser) parseIdent() Node {
-	node := &Ident{Literal: p.lit}
+	node := &Ident{Value: p.lit}
 	return node
 }
 
 func (p *parser) parseFlag(flags *Flags) (Node, error) {
 	switch p.tok {
 	case SHORT_FLAG:
-		tracef("parseFlag(...) parsing short flag with config=%+#v", flags)
+		tracef("parsing short flag with flags=%+#[1]v", flags)
+
 		return p.parseShortFlag(flags)
 	case LONG_FLAG:
-		tracef("parseFlag(...) parsing long flag with config=%+#v", flags)
+		tracef("parsing long flag with flags=%+#[1]v", flags)
+
 		return p.parseLongFlag(flags)
 	case COMPOUND_SHORT_FLAG:
-		tracef("parseFlag(...) parsing compound short flag with config=%+#v", flags)
+		tracef("parsing compound short flag with flags=%+#[1]v", flags)
+
 		return p.parseCompoundShortFlag(flags)
 	}
 
+	// TODO: don't panic
 	panic(fmt.Sprintf("token %v cannot be parsed as flag", p.tok))
 }
 
@@ -244,7 +133,7 @@ func (p *parser) parseShortFlag(flags *Flags) (Node, error) {
 		}
 	}
 
-	return p.parseConfiguredFlag(node, flCfg, nil)
+	return node, newParseFlagContext(node, flCfg, nil, p.cfg.ScannerConfig).parse(p)
 }
 
 func (p *parser) parseLongFlag(flags *Flags) (Node, error) {
@@ -262,7 +151,7 @@ func (p *parser) parseLongFlag(flags *Flags) (Node, error) {
 		}
 	}
 
-	return p.parseConfiguredFlag(node, flCfg, nil)
+	return node, newParseFlagContext(node, flCfg, nil, p.cfg.ScannerConfig).parse(p)
 }
 
 func (p *parser) parseCompoundShortFlag(flags *Flags) (Node, error) {
@@ -312,178 +201,157 @@ func (p *parser) parseCompoundShortFlag(flags *Flags) (Node, error) {
 				return nil, fmt.Errorf(errMsg+": %[1]w", Err)
 			}
 
-			flagNode, err := p.parseConfiguredFlag(node, flCfg, zeroValuePtr)
-			if err != nil {
+			if err := newParseFlagContext(node, flCfg, zeroValuePtr, p.cfg.ScannerConfig).parse(p); err != nil {
 				return nil, err
 			}
 
-			flagNodes = append(flagNodes, flagNode)
+			flagNodes = append(flagNodes, node)
 
 			continue
 		}
 
-		flagNode, err := p.parseConfiguredFlag(node, flCfg, nil)
-		if err != nil {
+		if err := newParseFlagContext(node, flCfg, nil, p.cfg.ScannerConfig).parse(p); err != nil {
 			return nil, err
 		}
 
-		flagNodes = append(flagNodes, flagNode)
+		flagNodes = append(flagNodes, node)
 	}
 
 	return &CompoundShortFlag{Nodes: flagNodes}, nil
 }
 
-func (p *parser) parseConfiguredFlag(node *Flag, flCfg FlagConfig, nValueOverride *NValue) (Node, error) {
+func (p *parser) parseCommandWithValue(
+	cmd *Command,
+	cCfg *CommandConfig,
+) error {
+	tracef("cCfg=%+#[1]v (cmd=%[2]q)", cCfg, cmd.Name)
+
 	values := []KeyValue{}
 	nodes := []Node{}
+	identIndex := 0
 
-	atExit := func() (*Flag, error) {
+	tailReturn := func() error {
 		if len(nodes) > 0 {
-			node.Nodes = nodes
+			tracef("setting non-empty nodes (len=%[1]d) (cmd=%[2]q)", len(nodes), cmd.Name)
+
+			cmd.Nodes = nodes
 		}
 
 		if len(values) > 0 {
-			node.Values = values
+			tracef("setting non-empty values (len=%[1]d) (cmd=%[2]q)", len(values), cmd.Name)
+
+			cmd.Values = values
 		}
 
-		if flCfg.On != nil {
-			tracef("parseConfiguredFlag(...) calling flag config handler for node=%+#[1]v", node)
-			if err := flCfg.On(*node); err != nil {
-				return nil, err
+		if cCfg.On != nil {
+			tracef("calling command config handler (cmd=%[1]q)", cmd.Name)
+
+			if err := cCfg.On(*cmd); err != nil {
+				return err
 			}
 		} else {
-			tracef("parseConfiguredFlag(...) no flag config handler for node=%+#[1]v", node)
+			tracef("no command config handler (cmd=%[1]q)", cmd.Name)
 		}
 
-		return node, nil
+		tracef("returning nil err (cmd=%[1]q)", cmd.Name)
+		return nil
 	}
 
-	identIndex := 0
-
 	for i := 0; p.tok != EOL; i++ {
-		if nValueOverride != nil && !(*nValueOverride).Contains(identIndex) {
-			tracef("parseConfiguredFlag(...) identIndex=%d exceeds expected=%v; breaking", identIndex, *nValueOverride)
+		if !p.buffered {
+			tracef("buffered=false; scanning next (cmd=%[1]q)", cmd.Name)
+			p.next()
+		}
+
+		tracef("setting buffered=false (cmd=%[1]q)", cmd.Name)
+
+		p.buffered = false
+
+		tracef("for=%[1]d values=%+#[2]v (cmd=%[3]q)", i, values, cmd.Name)
+		tracef("for=%[1]d nodes=%+#[2]v (cmd=%[3]q)", i, nodes, cmd.Name)
+		tracef("for=%[1]d tok=%[2]s lit=%[3]q pos=%[4]v (cmd=%[5]q)", i, p.tok, p.lit, p.pos, cmd.Name)
+
+		tracef("cCfg=%+#[1]v (cmd=%[2]q)", cCfg, cmd.Name)
+
+		if subCfg, ok := cCfg.GetCommandConfig(p.lit); ok {
+			subCommand := p.lit
+			subNode := &Command{Name: p.lit}
+
+			if err := p.parseCommandWithValue(subNode, &subCfg); err != nil {
+				return err
+			}
+
+			nodes = append(nodes, subNode)
+
+			tracef("breaking after sub-command=%[1]q (cmd=%[2]q)", subCommand, cmd.Name)
 			break
 		}
 
-		if !flCfg.NValue.Contains(identIndex) {
-			tracef("parseConfiguredFlag(...) identIndex=%d exceeds expected=%v; breaking", identIndex, flCfg.NValue)
-			break
-		}
-
-		p.next()
+		tracef("handling tok=%[1]s (cmd=%[2]q)", p.tok, cmd.Name)
 
 		switch p.tok {
 		case ARG_DELIMITER:
 			nodes = append(nodes, &ArgDelimiter{})
 
 			continue
-		case ASSIGN:
-			if len(nodes) > 0 {
-				tracef("checking for key-value assignment")
+		case IDENT, STDIN_FLAG:
+			if cCfg.NValue.Contains(identIndex) {
+				name := fmt.Sprintf("%d", identIndex)
 
-				prev := nodes[len(nodes)-1]
-				if v, ok := prev.(*Ident); ok {
-					tracef("setting previous node as *KeyValue with *Ident literal=%[1]q as key", v.Literal)
+				tracef("checking for name of identIndex=%[1]d (cmd=%[2]q)", identIndex, cmd.Name)
 
-					nodes[len(nodes)-1] = &KeyValue{Key: v.Literal}
+				if cCfg.HasValueNameForIndex(identIndex) {
+					name = cCfg.ValueNames[identIndex]
 
-					continue
+					tracef("setting name=%[1]q from config value names (cmd=%[2]q)", name, cmd.Name)
+				} else if cCfg.HasRepeatingValueName() {
+					name = cCfg.ValueNames[0]
+
+					tracef("setting name=%[1]q from repeating value name (cmd=%[2]q)", name, cmd.Name)
 				}
-			}
 
-			nodes = append(nodes, &Assign{})
-
-			continue
-		case IDENT, STDIN_FLAG, MULTI_VALUE_DELIMITER:
-			name := fmt.Sprintf("%d", identIndex)
-
-			tracef("parseConfiguredFlag(...) checking for name of identIndex=%d", identIndex)
-
-			if len(flCfg.ValueNames) > identIndex {
-				name = flCfg.ValueNames[identIndex]
-				tracef("parseConfiguredFlag(...) setting name=%s from config value names", name)
-			} else if len(flCfg.ValueNames) == 1 && (flCfg.NValue == OneOrMoreValue || flCfg.NValue == ZeroOrMoreValue) {
-				name = fmt.Sprintf("%s.%d", flCfg.ValueNames[0], identIndex)
-				tracef("parseConfiguredFlag(...) setting name=%s from repeating value name", name)
-			} else {
-				tracef("parseConfiguredFlag(...) setting name=%s", name)
-			}
-
-			if p.tok != MULTI_VALUE_DELIMITER {
 				values = append(values, KeyValue{Key: name, Value: p.lit})
 			}
 
-			addNode := func(node Node) {
-				identNode, identNodeOk := node.(*Ident)
-
-				if len(nodes) > 0 {
-					prev := nodes[len(nodes)-1]
-
-					if v, ok := prev.(*MultiIdent); ok {
-						tracef("appending node to previous nodes")
-
-						v.Nodes = append(v.Nodes, node)
-
-						return
-					} else if v, ok := prev.(*KeyValue); ok && identNodeOk {
-						tracef("setting node literal as previous node value")
-
-						v.Value = identNode.Literal
-						values = append(values, *v)
-
-						return
-					}
-				}
-
-				nodes = append(nodes, node)
-			}
-
 			if p.tok == STDIN_FLAG {
-				addNode(&StdinFlag{})
-			} else if p.tok == MULTI_VALUE_DELIMITER {
-				if len(nodes) > 0 {
-					prev := nodes[len(nodes)-1]
-
-					if v, ok := prev.(*Ident); ok {
-						tracef("setting previous node as *MultiIdent with *Ident node as first child")
-
-						nodes[len(nodes)-1] = &MultiIdent{Nodes: []Node{v}}
-					} else if v, ok := prev.(*StdinFlag); ok {
-						tracef("setting previous node as *MultiIdent with *StdinFlag node as first child")
-
-						nodes[len(nodes)-1] = &MultiIdent{Nodes: []Node{v}}
-					}
-				} else {
-					tracef("appending *MultiIdent with empty child nodes")
-
-					nodes = append(nodes, &MultiIdent{Nodes: []Node{}})
-				}
+				nodes = append(nodes, &StdinFlag{})
 			} else {
-				tracef("appending *Ident")
-
-				addNode(&Ident{Literal: p.lit})
+				nodes = append(nodes, &Ident{Value: p.lit})
 			}
 
-			if p.tok != MULTI_VALUE_DELIMITER {
-				identIndex++
+			identIndex++
+		case LONG_FLAG, SHORT_FLAG, COMPOUND_SHORT_FLAG:
+			tok := p.tok
+
+			flagNode, err := p.parseFlag(cCfg.Flags)
+			if err != nil {
+				return err
 			}
+
+			tracef("appending %[1]s node=%+#[2]v (cmd=%[3]q)", tok, flagNode, cmd.Name)
+
+			nodes = append(nodes, flagNode)
+		case ASSIGN:
+			tracef("error on bare tok=%[1]s (cmd=%[2]q)", p.tok, cmd.Name)
+
+			p.addError("invalid bare assignment")
+
+			break
 		default:
-			tracef("parseConfiguredFlag(...) breaking on %s %q %v; setting buffered=true", p.tok, p.lit, p.pos)
-			p.buffered = true
+			tracef("breaking on tok=%[1]s (cmd=%[2]q)", p.tok, cmd.Name)
 
-			return atExit()
+			return tailReturn()
 		}
 	}
 
-	return atExit()
+	return tailReturn()
 }
 
 func (p *parser) parsePassthrough() Node {
 	nodes := []Node{}
 
 	for ; p.tok != EOL; p.next() {
-		nodes = append(nodes, &Ident{Literal: p.lit})
+		nodes = append(nodes, &Ident{Value: p.lit})
 	}
 
 	if len(nodes) == 0 {
@@ -491,4 +359,244 @@ func (p *parser) parsePassthrough() Node {
 	}
 
 	return &PassthroughArgs{Nodes: nodes}
+}
+
+func newParseFlagContext(
+	fl *Flag,
+	flCfg FlagConfig,
+	nValueOverride *NValue,
+	sCfg *ScannerConfig,
+) *parseFlagContext {
+	return &parseFlagContext{
+		fl:             fl,
+		flCfg:          flCfg,
+		nValueOverride: nValueOverride,
+		values:         []KeyValue{},
+		nodes:          []Node{},
+		sCfg:           sCfg,
+	}
+}
+
+type parseFlagContext struct {
+	fl             *Flag
+	flCfg          FlagConfig
+	nValueOverride *NValue
+	values         []KeyValue
+	nodes          []Node
+	identIndex     int
+	prev           Node
+	sCfg           *ScannerConfig
+}
+
+func (pfc *parseFlagContext) parse(p *parser) error {
+	pfc.values = []KeyValue{}
+	pfc.nodes = []Node{}
+	pfc.identIndex = 0
+	pfc.prev = nil
+
+	for i := 0; p.tok != EOL; i++ {
+		if err, brk := pfc.parseToken(i, p); err != nil || brk {
+			return err
+		}
+	}
+
+	return pfc.finalize()
+}
+
+func (pfc *parseFlagContext) parseToken(i int, p *parser) (error, bool) {
+	if len(pfc.nodes) > 0 {
+		pfc.prev = pfc.nodes[len(pfc.nodes)-1]
+	}
+
+	if pfc.nValueOverride != nil && !(*pfc.nValueOverride).Contains(pfc.identIndex) {
+		tracef("identIndex=%[1]d exceeds expected=%[2]v; breaking (flag=%[3]q)", pfc.identIndex, *pfc.nValueOverride, pfc.fl.Name)
+
+		return pfc.finalize(), true
+	}
+
+	if !pfc.flCfg.NValue.Contains(pfc.identIndex) {
+		tracef("identIndex=%[1]d exceeds expected=%[2]v; breaking (flag=%[3]q)", pfc.identIndex, pfc.flCfg.NValue, pfc.fl.Name)
+
+		return pfc.finalize(), true
+	}
+
+	p.next()
+
+	tracef("for=%[1]d values=%+#[2]v (flag=%[3]q)", i, pfc.values, pfc.fl.Name)
+	tracef("for=%[1]d nodes=%+#[2]v (flag=%[3]q)", i, pfc.nodes, pfc.fl.Name)
+	tracef("for=%[1]d tok=%[2]s lit=%[3]q pos=%[4]v (flag=%[5]q)", i, p.tok, p.lit, p.pos, pfc.fl.Name)
+
+	switch p.tok {
+	case ARG_DELIMITER:
+		pfc.nodes = append(pfc.nodes, &ArgDelimiter{})
+
+		return nil, false
+	case ASSIGN:
+		return pfc.handleAssign()
+	case IDENT, STDIN_FLAG, MULTI_VALUE_DELIMITER:
+		return pfc.handleIdentStdinMulti(p.tok, p.lit)
+	default:
+		tracef("breaking on tok=%[1]s %[2]q %[3]v; setting buffered=true (flag=%[4]q)", p.tok, p.lit, p.pos, pfc.fl.Name)
+
+		p.buffered = true
+
+		return pfc.finalize(), true
+	}
+
+	return nil, false
+}
+
+func (pfc *parseFlagContext) setPrev(node Node) {
+	pfc.nodes[len(pfc.nodes)-1] = node
+}
+
+func (pfc *parseFlagContext) addNode(node Node) {
+	if pfc.prev == nil {
+		tracef("no previous node; appending node type=%[1]T (flag=%[2]q)", node, pfc.fl.Name)
+
+		pfc.nodes = append(pfc.nodes, node)
+
+		return
+	}
+
+	if pv, ok := pfc.prev.(*MultiIdent); ok {
+		tracef("appending node type=%[1]T to previous node nodes (flag=%[2]q)", node, pfc.fl.Name)
+
+		pv.Nodes = append(pv.Nodes, node)
+
+		return
+	}
+
+	pv, ok := pfc.prev.(*KeyValue)
+
+	if !ok {
+		tracef("appending node type=%[1]T to nodes (flag=%[2]q)", node, pfc.fl.Name)
+
+		pfc.nodes = append(pfc.nodes, node)
+
+		return
+	}
+
+	value := ""
+	if v, ok := node.(*Ident); ok {
+		value = v.Value
+	} else if _, ok := node.(*StdinFlag); ok {
+		value = string(pfc.sCfg.FlagPrefix)
+	}
+
+	tracef("setting node value=%[1]q as previous node (key=%[2]q) value (flag=%[3]q)", value, pv.Key, pfc.fl.Name)
+
+	pv.Value = value
+
+	pfc.setPrev(pv)
+	pfc.values = append(pfc.values, *pv)
+}
+
+func (pfc *parseFlagContext) handleAssign() (error, bool) {
+	tracef("encountered assignment (flag=%[1]q)", pfc.fl.Name)
+
+	if pfc.prev == nil {
+		tracef("appending assignment node (flag=%[1]q)", pfc.fl.Name)
+
+		pfc.nodes = append(pfc.nodes, &Assign{})
+
+		return nil, false
+	}
+
+	tracef("checking for key-value assignment (flag=%[1]q)", pfc.fl.Name)
+
+	if v, ok := pfc.prev.(*Ident); ok {
+		tracef("setting previous node as *KeyValue with *Ident literal=%[1]q as key (flag=%[2]q)", v.Value, pfc.fl.Name)
+
+		pfc.setPrev(&KeyValue{Key: v.Value})
+
+		return nil, false
+	}
+
+	pfc.nodes = append(pfc.nodes, &Assign{})
+
+	return nil, false
+}
+
+func (pfc *parseFlagContext) handleIdentStdinMulti(tok Token, lit string) (error, bool) {
+	name := fmt.Sprintf("%d", pfc.identIndex)
+
+	tracef("checking for name of identIndex=%[1]d (flag=%[2]q)", pfc.identIndex, pfc.fl.Name)
+
+	if pfc.flCfg.HasValueNameForIndex(pfc.identIndex) {
+		name = pfc.flCfg.ValueNames[pfc.identIndex]
+
+		tracef("setting name=%[1]q from config value names (flag=%[2]q)", name, pfc.fl.Name)
+	} else if pfc.flCfg.HasRepeatingValueName() {
+		name = pfc.flCfg.ValueNames[0]
+
+		tracef("setting name=%[1]q from repeating value name (flag=%[2]q)", name, pfc.fl.Name)
+	} else {
+		tracef("setting name=%[1]q (flag=%[2]q)", name, pfc.fl.Name)
+	}
+
+	if tok == STDIN_FLAG {
+		pfc.addNode(&StdinFlag{})
+		pfc.identIndex++
+
+		return nil, false
+	}
+
+	if tok != MULTI_VALUE_DELIMITER {
+		tracef("appending *Ident node (flag=%[1]q)", pfc.fl.Name)
+
+		pfc.addNode(&Ident{Value: lit})
+		pfc.identIndex++
+
+		kv := KeyValue{Key: name, Value: lit}
+		tracef("appending %+[1]v to values (flag=%[2]q)", kv, pfc.fl.Name)
+
+		pfc.values = append(pfc.values, kv)
+
+		return nil, false
+	}
+
+	if pfc.prev == nil {
+		tracef("appending *MultiIdent with empty child nodes (flag=%[1]q)", pfc.fl.Name)
+
+		pfc.nodes = append(pfc.nodes, &MultiIdent{Nodes: []Node{}})
+
+		return nil, false
+	}
+
+	if v, ok := pfc.prev.(*Ident); ok {
+		tracef("setting previous node as *MultiIdent with *Ident node as first child (flag=%[1]q)", pfc.fl.Name)
+
+		pfc.setPrev(&MultiIdent{Nodes: []Node{v}})
+	} else if v, ok := pfc.prev.(*StdinFlag); ok {
+		tracef("setting previous node as *MultiIdent with *StdinFlag node as first child (flag=%[1]q)", pfc.fl.Name)
+
+		pfc.setPrev(&MultiIdent{Nodes: []Node{v}})
+	}
+
+	return nil, false
+}
+
+func (pfc *parseFlagContext) finalize() error {
+	if len(pfc.nodes) > 0 {
+		tracef("setting non-empty nodes (len=%[1]d) (flag=%[2]q)", len(pfc.nodes), pfc.fl.Name)
+
+		pfc.fl.Nodes = pfc.nodes
+	}
+
+	if len(pfc.values) > 0 {
+		tracef("setting non-empty values (len=%[1]d) (flag=%[2]q)", len(pfc.values), pfc.fl.Name)
+
+		pfc.fl.Values = pfc.values
+	}
+
+	if pfc.flCfg.On == nil {
+		tracef("no flag config handler (flag=%[1]q)", pfc.fl.Name)
+
+		return nil
+	}
+
+	tracef("calling flag config handler (flag=%[1]q)", pfc.fl.Name)
+
+	return pfc.flCfg.On(*pfc.fl)
 }

@@ -21,9 +21,9 @@ func TestUnparseTree(t *testing.T) {
 
 		sv, err := UnparseTree(
 			[]Node{
-				&Ident{Literal: "steamed"},
+				&Ident{Value: "steamed"},
 				&ArgDelimiter{},
-				&Ident{Literal: "hams"},
+				&Ident{Value: "hams"},
 			},
 			POSIXyScannerConfig,
 		)
@@ -51,8 +51,8 @@ func TestUnparseTree(t *testing.T) {
 								&Assign{},
 								&MultiIdent{
 									Nodes: []Node{
-										&Ident{Literal: "yep"},
-										&Ident{Literal: "maybe"},
+										&Ident{Value: "yep"},
+										&Ident{Value: "maybe"},
 									},
 								},
 							},
@@ -67,7 +67,7 @@ func TestUnparseTree(t *testing.T) {
 					},
 					Nodes: []Node{
 						&Assign{},
-						&Ident{Literal: "42"},
+						&Ident{Value: "42"},
 					},
 				},
 				&ArgDelimiter{},
@@ -110,7 +110,7 @@ func TestUnparseTree(t *testing.T) {
 							},
 							Nodes: []Node{
 								&ArgDelimiter{},
-								&Ident{Literal: "mario"},
+								&Ident{Value: "mario"},
 							},
 						},
 					},
@@ -150,7 +150,7 @@ func TestUnparseTree(t *testing.T) {
 									},
 									Nodes: []Node{
 										&Assign{},
-										&Ident{Literal: "o"},
+										&Ident{Value: "o"},
 									},
 								},
 							},
@@ -185,9 +185,9 @@ func TestUnparseTree(t *testing.T) {
 								&Assign{},
 								&MultiIdent{
 									Nodes: []Node{
-										&Ident{Literal: "whales"},
-										&Ident{Literal: "majesticness"},
-										&Ident{Literal: "waters"},
+										&Ident{Value: "whales"},
+										&Ident{Value: "majesticness"},
+										&Ident{Value: "waters"},
 									},
 								},
 							},
@@ -204,12 +204,12 @@ func TestUnparseTree(t *testing.T) {
 								&Assign{},
 								&MultiIdent{
 									Nodes: []Node{
-										&Ident{Literal: "sparkling"},
-										&Ident{Literal: "lens flares"},
+										&Ident{Value: "sparkling"},
+										&Ident{Value: "lens flares"},
 									},
 								},
 								&ArgDelimiter{},
-								&Ident{Literal: "probably ducks"},
+								&Ident{Value: "probably ducks"},
 							},
 						},
 					},
@@ -245,9 +245,9 @@ func TestUnparseTree(t *testing.T) {
 						&ArgDelimiter{},
 						&PassthroughArgs{
 							Nodes: []Node{
-								&Ident{Literal: "tardigrade=smol"},
-								&Ident{Literal: "--??"},
-								&Ident{Literal: "-!"},
+								&Ident{Value: "tardigrade=smol"},
+								&Ident{Value: "--??"},
+								&Ident{Value: "-!"},
 							},
 						},
 					},
@@ -289,11 +289,11 @@ func TestUnparseTree(t *testing.T) {
 							},
 							Nodes: []Node{
 								&Assign{},
-								&Ident{Literal: "5"},
+								&Ident{Value: "5"},
 							},
 						},
 						&ArgDelimiter{},
-						&Ident{Literal: "https://gliveoarden.example.org/breadstick?uh"},
+						&Ident{Value: "https://gliveoarden.example.org/breadstick?uh"},
 						&ArgDelimiter{},
 						&Flag{
 							Name: "o",
@@ -309,7 +309,7 @@ func TestUnparseTree(t *testing.T) {
 						&ArgDelimiter{},
 						&PassthroughArgs{
 							Nodes: []Node{
-								&Ident{Literal: "-vvvvvvvvvvvvv"},
+								&Ident{Value: "-vvvvvvvvvvvvv"},
 							},
 						},
 					},
@@ -349,8 +349,8 @@ func TestUnparseTree(t *testing.T) {
 								&ArgDelimiter{},
 								&MultiIdent{
 									Nodes: []Node{
-										&Ident{Literal: "parsed1"},
-										&Ident{Literal: "parsed2"},
+										&Ident{Value: "parsed1"},
+										&Ident{Value: "parsed2"},
 									},
 								},
 								&ArgDelimiter{},
@@ -366,8 +366,8 @@ func TestUnparseTree(t *testing.T) {
 								&ArgDelimiter{},
 								&MultiIdent{
 									Nodes: []Node{
-										&Ident{Literal: "parsed3"},
-										&Ident{Literal: "parsed4"},
+										&Ident{Value: "parsed3"},
+										&Ident{Value: "parsed4"},
 									},
 								},
 								&ArgDelimiter{},
@@ -383,8 +383,8 @@ func TestUnparseTree(t *testing.T) {
 								&ArgDelimiter{},
 								&MultiIdent{
 									Nodes: []Node{
-										&Ident{Literal: "13.3"},
-										&Ident{Literal: "14.4"},
+										&Ident{Value: "13.3"},
+										&Ident{Value: "14.4"},
 									},
 								},
 								&ArgDelimiter{},
@@ -400,8 +400,8 @@ func TestUnparseTree(t *testing.T) {
 								&ArgDelimiter{},
 								&MultiIdent{
 									Nodes: []Node{
-										&Ident{Literal: "15.5"},
-										&Ident{Literal: "16.6"},
+										&Ident{Value: "15.5"},
+										&Ident{Value: "16.6"},
 									},
 								},
 								&ArgDelimiter{},
@@ -417,8 +417,8 @@ func TestUnparseTree(t *testing.T) {
 								&ArgDelimiter{},
 								&MultiIdent{
 									Nodes: []Node{
-										&Ident{Literal: "13"},
-										&Ident{Literal: "14"},
+										&Ident{Value: "13"},
+										&Ident{Value: "14"},
 									},
 								},
 								&ArgDelimiter{},
@@ -434,8 +434,8 @@ func TestUnparseTree(t *testing.T) {
 								&ArgDelimiter{},
 								&MultiIdent{
 									Nodes: []Node{
-										&Ident{Literal: "15"},
-										&Ident{Literal: "16"},
+										&Ident{Value: "15"},
+										&Ident{Value: "16"},
 									},
 								},
 							},

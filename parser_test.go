@@ -77,7 +77,7 @@ func TestParser(t *testing.T) {
 							},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "mario"},
+								&argh.Ident{Value: "mario"},
 							},
 						},
 					},
@@ -97,7 +97,7 @@ func TestParser(t *testing.T) {
 								{Key: "name", Value: "mario"},
 							},
 							Nodes: []argh.Node{
-								&argh.Ident{Literal: "mario"},
+								&argh.Ident{Value: "mario"},
 							},
 						},
 					},
@@ -154,7 +154,7 @@ func TestParser(t *testing.T) {
 							},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "mario"},
+								&argh.Ident{Value: "mario"},
 								&argh.ArgDelimiter{},
 								&argh.CompoundShortFlag{
 									Nodes: []argh.Node{
@@ -179,7 +179,7 @@ func TestParser(t *testing.T) {
 								{Key: "name", Value: "mario"},
 							},
 							Nodes: []argh.Node{
-								&argh.Ident{Literal: "mario"},
+								&argh.Ident{Value: "mario"},
 								&argh.Flag{Name: "e"},
 								&argh.Flag{Name: "a"},
 								&argh.Flag{Name: "t"},
@@ -215,7 +215,7 @@ func TestParser(t *testing.T) {
 					Values: []argh.KeyValue{{Key: "0", Value: "excel"}},
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.Ident{Literal: "excel"},
+						&argh.Ident{Value: "excel"},
 					},
 				},
 			},
@@ -224,7 +224,7 @@ func TestParser(t *testing.T) {
 					Name:   "pizzas",
 					Values: []argh.KeyValue{{Key: "0", Value: "excel"}},
 					Nodes: []argh.Node{
-						&argh.Ident{Literal: "excel"},
+						&argh.Ident{Value: "excel"},
 					},
 				},
 			},
@@ -250,13 +250,13 @@ func TestParser(t *testing.T) {
 					},
 					Nodes: []argh.Node{
 						&argh.ArgDelimiter{},
-						&argh.Ident{Literal: "excel"},
+						&argh.Ident{Value: "excel"},
 						&argh.ArgDelimiter{},
-						&argh.Ident{Literal: "wildly"},
+						&argh.Ident{Value: "wildly"},
 						&argh.ArgDelimiter{},
-						&argh.Ident{Literal: "when"},
+						&argh.Ident{Value: "when"},
 						&argh.ArgDelimiter{},
-						&argh.Ident{Literal: "feral"},
+						&argh.Ident{Value: "feral"},
 					},
 				},
 			},
@@ -270,10 +270,10 @@ func TestParser(t *testing.T) {
 						{Key: "word", Value: "feral"},
 					},
 					Nodes: []argh.Node{
-						&argh.Ident{Literal: "excel"},
-						&argh.Ident{Literal: "wildly"},
-						&argh.Ident{Literal: "when"},
-						&argh.Ident{Literal: "feral"},
+						&argh.Ident{Value: "excel"},
+						&argh.Ident{Value: "wildly"},
+						&argh.Ident{Value: "when"},
+						&argh.Ident{Value: "feral"},
 					},
 				},
 			},
@@ -313,9 +313,9 @@ func TestParser(t *testing.T) {
 								&argh.Assign{},
 								&argh.MultiIdent{
 									Nodes: []argh.Node{
-										&argh.Ident{Literal: "whales"},
-										&argh.Ident{Literal: "majesticness"},
-										&argh.Ident{Literal: "waters"},
+										&argh.Ident{Value: "whales"},
+										&argh.Ident{Value: "majesticness"},
+										&argh.Ident{Value: "waters"},
 									},
 								},
 								&argh.ArgDelimiter{},
@@ -332,12 +332,12 @@ func TestParser(t *testing.T) {
 								&argh.ArgDelimiter{},
 								&argh.MultiIdent{
 									Nodes: []argh.Node{
-										&argh.Ident{Literal: "sparkling"},
-										&argh.Ident{Literal: "lens flares"},
+										&argh.Ident{Value: "sparkling"},
+										&argh.Ident{Value: "lens flares"},
 									},
 								},
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "probably ducks"},
+								&argh.Ident{Value: "probably ducks"},
 							},
 						},
 					},
@@ -358,9 +358,9 @@ func TestParser(t *testing.T) {
 								&argh.Assign{},
 								&argh.MultiIdent{
 									Nodes: []argh.Node{
-										&argh.Ident{Literal: "whales"},
-										&argh.Ident{Literal: "majesticness"},
-										&argh.Ident{Literal: "waters"},
+										&argh.Ident{Value: "whales"},
+										&argh.Ident{Value: "majesticness"},
+										&argh.Ident{Value: "waters"},
 									},
 								},
 							},
@@ -375,11 +375,11 @@ func TestParser(t *testing.T) {
 							Nodes: []argh.Node{
 								&argh.MultiIdent{
 									Nodes: []argh.Node{
-										&argh.Ident{Literal: "sparkling"},
-										&argh.Ident{Literal: "lens flares"},
+										&argh.Ident{Value: "sparkling"},
+										&argh.Ident{Value: "lens flares"},
 									},
 								},
-								&argh.Ident{Literal: "probably ducks"},
+								&argh.Ident{Value: "probably ducks"},
 							},
 						},
 					},
@@ -462,7 +462,7 @@ func TestParser(t *testing.T) {
 							Values: []argh.KeyValue{{Key: "0", Value: "soon"}},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "soon"},
+								&argh.Ident{Value: "soon"},
 							},
 						},
 						&argh.ArgDelimiter{},
@@ -477,11 +477,11 @@ func TestParser(t *testing.T) {
 							},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "square"},
+								&argh.Ident{Value: "square"},
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "shaped"},
+								&argh.Ident{Value: "shaped"},
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "hot"},
+								&argh.Ident{Value: "hot"},
 								&argh.ArgDelimiter{},
 							},
 						},
@@ -498,7 +498,7 @@ func TestParser(t *testing.T) {
 							Name:   "fresh",
 							Values: []argh.KeyValue{{Key: "0", Value: "soon"}},
 							Nodes: []argh.Node{
-								&argh.Ident{Literal: "soon"},
+								&argh.Ident{Value: "soon"},
 							},
 						},
 						&argh.Flag{Name: "super-hot-right-now"},
@@ -510,9 +510,9 @@ func TestParser(t *testing.T) {
 								{Key: "2", Value: "hot"},
 							},
 							Nodes: []argh.Node{
-								&argh.Ident{Literal: "square"},
-								&argh.Ident{Literal: "shaped"},
-								&argh.Ident{Literal: "hot"},
+								&argh.Ident{Value: "square"},
+								&argh.Ident{Value: "shaped"},
+								&argh.Ident{Value: "hot"},
 							},
 						},
 						&argh.Flag{Name: "please"},
@@ -647,7 +647,7 @@ func TestParser(t *testing.T) {
 							Values: []argh.KeyValue{{Key: "0", Value: "1312"}},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "1312"},
+								&argh.Ident{Value: "1312"},
 							},
 						},
 						&argh.ArgDelimiter{},
@@ -671,7 +671,7 @@ func TestParser(t *testing.T) {
 							Name:   "b",
 							Values: []argh.KeyValue{{Key: "0", Value: "1312"}},
 							Nodes: []argh.Node{
-								&argh.Ident{Literal: "1312"},
+								&argh.Ident{Value: "1312"},
 							},
 						},
 						&argh.Flag{Name: "l"},
@@ -716,21 +716,21 @@ func TestParser(t *testing.T) {
 							Name: "fly",
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "freely"},
+								&argh.Ident{Value: "freely"},
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "sometimes"},
+								&argh.Ident{Value: "sometimes"},
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "and"},
+								&argh.Ident{Value: "and"},
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "other"},
+								&argh.Ident{Value: "other"},
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "times"},
+								&argh.Ident{Value: "times"},
 								&argh.ArgDelimiter{},
 								&argh.Command{
 									Name: "fry",
 									Nodes: []argh.Node{
 										&argh.ArgDelimiter{},
-										&argh.Ident{Literal: "deeply"},
+										&argh.Ident{Value: "deeply"},
 										&argh.ArgDelimiter{},
 										&argh.Flag{Name: "forever"},
 									},
@@ -747,15 +747,15 @@ func TestParser(t *testing.T) {
 						&argh.Command{
 							Name: "fly",
 							Nodes: []argh.Node{
-								&argh.Ident{Literal: "freely"},
-								&argh.Ident{Literal: "sometimes"},
-								&argh.Ident{Literal: "and"},
-								&argh.Ident{Literal: "other"},
-								&argh.Ident{Literal: "times"},
+								&argh.Ident{Value: "freely"},
+								&argh.Ident{Value: "sometimes"},
+								&argh.Ident{Value: "and"},
+								&argh.Ident{Value: "other"},
+								&argh.Ident{Value: "times"},
 								&argh.Command{
 									Name: "fry",
 									Nodes: []argh.Node{
-										&argh.Ident{Literal: "deeply"},
+										&argh.Ident{Value: "deeply"},
 										&argh.Flag{Name: "forever"},
 									},
 								},
@@ -803,11 +803,11 @@ func TestParser(t *testing.T) {
 									},
 									Nodes: []argh.Node{
 										&argh.ArgDelimiter{},
-										&argh.Ident{Literal: "sauce"},
+										&argh.Ident{Value: "sauce"},
 										&argh.ArgDelimiter{},
-										&argh.Ident{Literal: "heat"},
+										&argh.Ident{Value: "heat"},
 										&argh.ArgDelimiter{},
-										&argh.Ident{Literal: "love"},
+										&argh.Ident{Value: "love"},
 										&argh.ArgDelimiter{},
 									},
 								},
@@ -825,7 +825,7 @@ func TestParser(t *testing.T) {
 									},
 									Nodes: []argh.Node{
 										&argh.ArgDelimiter{},
-										&argh.Ident{Literal: "over9000"},
+										&argh.Ident{Value: "over9000"},
 									},
 								},
 							},
@@ -848,9 +848,9 @@ func TestParser(t *testing.T) {
 								{Key: "2", Value: "love"},
 							},
 							Nodes: []argh.Node{
-								&argh.Ident{Literal: "sauce"},
-								&argh.Ident{Literal: "heat"},
-								&argh.Ident{Literal: "love"},
+								&argh.Ident{Value: "sauce"},
+								&argh.Ident{Value: "heat"},
+								&argh.Ident{Value: "love"},
 							},
 						},
 						&argh.Flag{Name: "a"},
@@ -862,7 +862,7 @@ func TestParser(t *testing.T) {
 								{Key: "level", Value: "over9000"},
 							},
 							Nodes: []argh.Node{
-								&argh.Ident{Literal: "over9000"},
+								&argh.Ident{Value: "over9000"},
 							},
 						},
 					},
@@ -929,7 +929,7 @@ func TestParser(t *testing.T) {
 													Values: []argh.KeyValue{{Key: "0", Value: "hugs"}},
 													Nodes: []argh.Node{
 														&argh.ArgDelimiter{},
-														&argh.Ident{Literal: "hugs"},
+														&argh.Ident{Value: "hugs"},
 													},
 												},
 											},
@@ -959,7 +959,7 @@ func TestParser(t *testing.T) {
 											Name:   "t",
 											Values: []argh.KeyValue{{Key: "0", Value: "hugs"}},
 											Nodes: []argh.Node{
-												&argh.Ident{Literal: "hugs"},
+												&argh.Ident{Value: "hugs"},
 											},
 										},
 									},
@@ -972,7 +972,7 @@ func TestParser(t *testing.T) {
 		},
 		{
 			name: "key-value flag values",
-			args: []string{"noodles", "-t", "paste=chili", "-t", "seeds=sesame,cilantro"},
+			args: []string{"noodles", "-t", "paste=chili", "-t", "seeds=sesame,cilantro=,from=-"},
 			cfg: &argh.ParserConfig{
 				Prog: &argh.CommandConfig{
 					Commands: &argh.Commands{},
@@ -1069,7 +1069,7 @@ func TestParser(t *testing.T) {
 									Values: []argh.KeyValue{{Key: "0", Value: "golf"}},
 									Nodes: []argh.Node{
 										&argh.Assign{},
-										&argh.Ident{Literal: "golf"},
+										&argh.Ident{Value: "golf"},
 									},
 								},
 							},
@@ -1082,14 +1082,14 @@ func TestParser(t *testing.T) {
 							Values: []argh.KeyValue{{Key: "0", Value: "bonk"}},
 							Nodes: []argh.Node{
 								&argh.ArgDelimiter{},
-								&argh.Ident{Literal: "bonk"},
+								&argh.Ident{Value: "bonk"},
 								&argh.ArgDelimiter{},
 								&argh.Flag{
 									Name:   "FIERCENESS",
 									Values: []argh.KeyValue{{Key: "0", Value: "-2"}},
 									Nodes: []argh.Node{
 										&argh.Assign{},
-										&argh.Ident{Literal: "-2"},
+										&argh.Ident{Value: "-2"},
 									},
 								},
 							},
@@ -1137,7 +1137,7 @@ func TestParser(t *testing.T) {
 							Values: []argh.KeyValue{{Key: "0", Value: "ppy"}},
 							Nodes: []argh.Node{
 								&argh.Assign{},
-								&argh.Ident{Literal: "ppy"},
+								&argh.Ident{Value: "ppy"},
 							},
 						},
 						&argh.ArgDelimiter{},
@@ -1184,6 +1184,10 @@ func TestParser(t *testing.T) {
 				pCfg := tc.cfg
 				if pCfg == nil {
 					pCfg = argh.NewParserConfig()
+				}
+
+				if pCfg.ScannerConfig == nil {
+					pCfg.ScannerConfig = argh.POSIXyScannerConfig
 				}
 
 				pt, err := argh.ParseArgs(tc.args, pCfg)

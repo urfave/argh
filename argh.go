@@ -9,7 +9,9 @@ import (
 )
 
 var (
-	isTracingOn = os.Getenv("URFAVE_ARGH_TRACING") == "on"
+	tracing             = strings.Split(os.Getenv("URFAVE_ARGH_TRACING"), ",")
+	isTracingOn         = sliceContains(tracing, "on")
+	isTracingWithCaller = !sliceContains(tracing, "caller=off")
 
 	Err = errors.New("urfave/argh error")
 )
@@ -23,23 +25,46 @@ func tracef(format string, a ...any) {
 		format = format + "\n"
 	}
 
-	pc, file, line, _ := runtime.Caller(1)
-	cf := runtime.FuncForPC(pc)
+	if isTracingWithCaller {
+		pc, file, line, _ := runtime.Caller(1)
+		cf := runtime.FuncForPC(pc)
+
+		fmt.Fprintf(
+			os.Stderr,
+			strings.Join([]string{
+				"## URFAVE ARGH TRACE ",
+				file,
+				":",
+				fmt.Sprintf("%v", line),
+				" ",
+				fmt.Sprintf("(%s)", cf.Name()),
+				" ",
+				format,
+			}, ""),
+			a...,
+		)
+
+		return
+	}
 
 	fmt.Fprintf(
 		os.Stderr,
 		strings.Join([]string{
 			"## URFAVE ARGH TRACE ",
-			file,
-			":",
-			fmt.Sprintf("%v", line),
-			" ",
-			fmt.Sprintf("(%s)", cf.Name()),
-			" ",
 			format,
 		}, ""),
 		a...,
 	)
+}
+
+func sliceContains[T comparable](sl []T, k T) bool {
+	for _, item := range sl {
+		if item == k {
+			return true
+		}
+	}
+
+	return false
 }
 
 func FirstValue(sl []KeyValue, key string) (string, bool) {
@@ -52,6 +77,7 @@ func FirstValue(sl []KeyValue, key string) (string, bool) {
 	return "", false
 }
 
+/* NOTE: if needed:
 func LastValue(sl []KeyValue, key string) (string, bool) {
 	v := ""
 	ok := false
@@ -77,3 +103,4 @@ func AllValues(sl []KeyValue, key string) []string {
 
 	return v
 }
+*/

@@ -52,6 +52,14 @@ func (cCfg *CommandConfig) init() {
 	}
 }
 
+func (cCfg *CommandConfig) HasValueNameForIndex(i int) bool {
+	return len(cCfg.ValueNames) > i
+}
+
+func (cCfg *CommandConfig) HasRepeatingValueName() bool {
+	return len(cCfg.ValueNames) == 1 && (cCfg.NValue == OneOrMoreValue || cCfg.NValue == ZeroOrMoreValue)
+}
+
 func (cCfg *CommandConfig) GetCommandConfig(name string) (CommandConfig, bool) {
 	tracef("CommandConfig.GetCommandConfig(%q)", name)
 
@@ -101,6 +109,14 @@ type FlagConfig struct {
 	ValueNames []string
 
 	On func(Flag) error `json:"-"`
+}
+
+func (flCfg *FlagConfig) HasValueNameForIndex(i int) bool {
+	return len(flCfg.ValueNames) > i
+}
+
+func (flCfg *FlagConfig) HasRepeatingValueName() bool {
+	return len(flCfg.ValueNames) == 1 && (flCfg.NValue == OneOrMoreValue || flCfg.NValue == ZeroOrMoreValue)
 }
 
 type Flags struct {
